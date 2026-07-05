@@ -237,23 +237,34 @@ select.input{
 }
 .die.rolling{animation:diceTumble .62s cubic-bezier(.3,.7,.4,1);background:var(--main-soft);}
 
-/* ---------- カウンター ---------- */
-.cnt-grid{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;gap:6px;margin:6px 0;}
+/* ---------- カウンター（複数個並べても場所を取らないコンパクト行） ---------- */
+.cnt-row{
+  display:flex;align-items:center;gap:7px;
+  background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-s);
+  padding:6px 9px;margin-bottom:6px;
+}
 .cnt-btn{
-  width:60px;height:60px;border-radius:50%;font-size:26px;font-weight:900;line-height:1;
+  width:34px;height:34px;flex-shrink:0;border-radius:50%;font-size:17px;font-weight:900;line-height:1;
   display:flex;align-items:center;justify-content:center;
 }
-.cnt-btn.plus{color:#fff;background:linear-gradient(135deg,var(--main),var(--main-strong));box-shadow:0 4px 12px rgba(192,111,141,.35);}
+.cnt-btn.plus{color:#fff;background:linear-gradient(135deg,var(--main),var(--main-strong));box-shadow:0 3px 9px rgba(192,111,141,.35);}
 .cnt-btn.minus{color:var(--main-strong);background:var(--bg);border:2px solid var(--main-soft);}
 .cnt-btn:active{transform:scale(.92);}
-.cnt-value{font-size:42px;font-weight:900;text-align:center;font-variant-numeric:tabular-nums;line-height:1.1;}
+.cnt-mid{flex:1;min-width:0;text-align:center;}
+.cnt-mid-row{display:flex;align-items:baseline;justify-content:center;gap:6px;}
+.cnt-value{font-size:19px;font-weight:900;text-align:center;font-variant-numeric:tabular-nums;line-height:1.15;}
 .cnt-value.done{color:var(--main-strong);}
-.cnt-remain{text-align:center;font-size:12px;font-weight:700;color:var(--text-sub);}
+.cnt-remain{font-size:10px;font-weight:700;color:var(--text-sub);white-space:nowrap;}
 .cnt-name{
-  border:none;background:transparent;font-size:15px;font-weight:900;color:var(--text);
-  width:100%;padding:4px 2px;border-bottom:1.5px dashed transparent;
+  border:none;background:transparent;font-size:11.5px;font-weight:700;color:var(--text-sub);
+  width:100%;text-align:center;padding:0;border-bottom:1.5px dashed transparent;line-height:1.4;
 }
-.cnt-name:focus{outline:none;border-bottom-color:var(--main-soft);}
+.cnt-name:focus{outline:none;border-bottom-color:var(--main-soft);color:var(--text);}
+.cnt-more{
+  width:26px;height:26px;flex-shrink:0;border-radius:50%;font-size:13px;color:var(--text-sub);
+  background:var(--bg-soft);display:flex;align-items:center;justify-content:center;
+}
+.cnt-settings{padding:10px 2px 2px;border-top:1px dashed var(--line);margin-top:8px;}
 
 /* ---------- ラップ・リスト行 ---------- */
 .list-row{

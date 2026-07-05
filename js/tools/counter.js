@@ -1,5 +1,8 @@
 'use strict';
-/* ツール: カウンター（上限設定・残り表示・加算単位変更・最大20個・名前変更） */
+/* ツール: カウンター（上限設定・残り表示・加算単位変更・最大20個・名前変更）
+   パネル開けなど複数個同時に使う場面が多いため、1個あたりの高さを
+   小さいコンパクトな行にまとめ、スクロールなしで並べられるようにする。
+   加算単位・上限などの細かい設定は行の下に折りたたんで表示する。 */
 (function () {
   const { register, Store, h, uid, toast, fmtNum } = Gerbera;
   const KEY = 'counters';
@@ -28,7 +31,7 @@
         }
       }, '＋ カウンターを追加');
 
-      function counterCard(c) {
+      function counterRow(c) {
         const limit = () => (c.limit === null || c.limit === '' ? DEFAULT_LIMIT : c.limit);
 
         const valueEl = h('div', { class: 'cnt-value' });
@@ -56,21 +59,7 @@
             }
           }, '×' + s));
 
-        const card = h('div', { class: 'card' },
-          h('div', { class: 'hstack' },
-            h('input', { class: 'cnt-name grow', value: c.name, placeholder: '名前',
-              oninput: e => { c.name = e.target.value; save(); } }),
-            h('button', { class: 'icon-btn danger', 'aria-label': 'このカウンターを削除',
-              onclick: () => {
-                if (!confirm(`「${c.name || 'カウンター'}」を削除しますか？`)) return;
-                counters = counters.filter(x => x.id !== c.id);
-                save();
-                render();
-              } }, '🗑')),
-          h('div', { class: 'cnt-grid' },
-            h('button', { class: 'cnt-btn minus', onclick: () => bump(-1), 'aria-label': '減らす' }, '−'),
-            h('div', {}, valueEl, remainEl),
-            h('button', { class: 'cnt-btn plus', onclick: () => bump(1), 'aria-label': '増やす' }, '＋')),
+        const settings = h('div', { class: 'cnt-settings', hidden: true },
           h('div', { class: 'hstack', style: 'flex-wrap:wrap;justify-content:center;gap:6px' },
             stepChips,
             h('div', { class: 'hstack', style: 'margin-left:auto' },
@@ -83,12 +72,32 @@
                   save();
                   paint();
                 } }))));
+
+        const moreBtn = h('button', { class: 'cnt-more', 'aria-label': '詳細設定を開く',
+          onclick: () => { settings.hidden = !settings.hidden; } }, '⚙');
+
+        const row = h('div', { class: 'cnt-row' },
+          h('button', { class: 'cnt-btn minus', onclick: () => bump(-1), 'aria-label': '減らす' }, '−'),
+          h('div', { class: 'cnt-mid' },
+            h('input', { class: 'cnt-name', value: c.name, placeholder: '名前',
+              oninput: e => { c.name = e.target.value; save(); } }),
+            h('div', { class: 'cnt-mid-row' }, valueEl, remainEl)),
+          h('button', { class: 'cnt-btn plus', onclick: () => bump(1), 'aria-label': '増やす' }, '＋'),
+          moreBtn,
+          h('button', { class: 'icon-btn danger', 'aria-label': 'このカウンターを削除',
+            onclick: () => {
+              if (!confirm(`「${c.name || 'カウンター'}」を削除しますか？`)) return;
+              counters = counters.filter(x => x.id !== c.id);
+              save();
+              render();
+            } }, '🗑'));
+
         paint();
-        return card;
+        return h('div', {}, row, settings);
       }
 
       function render() {
-        listEl.replaceChildren(...counters.map(counterCard));
+        listEl.replaceChildren(...counters.map(counterRow));
       }
       render();
 

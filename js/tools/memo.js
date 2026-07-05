@@ -1,8 +1,28 @@
 'use strict';
 /* ツール: リスナーメモ（リスナー名・発言内容のメモ。ページ移動しても消えない） */
 (function () {
-  const { register, Store, h, uid } = Gerbera;
+  const { register, Store, h, uid, toast } = Gerbera;
   const KEY = 'listenerMemo';
+
+  function copyNote(n) {
+    const text = (n.name ? n.name + '\n' : '') + n.note;
+    const done = () => toast('📋 コピーしました');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { toast('コピーできませんでした'); }
+    document.body.removeChild(ta);
+  }
 
   register({
     id: 'memo', name: 'リスナーメモ', icon: '📝',
@@ -24,13 +44,16 @@
                       oninput: e => { n.name = e.target.value; save(); } }),
                     h('textarea', { class: 'input', style: 'min-height:56px',
                       oninput: e => { n.note = e.target.value; save(); } }, n.note)),
-                  h('button', { class: 'icon-btn danger', 'aria-label': 'このメモを削除',
-                    onclick: () => {
-                      if (!confirm(`「${n.name || 'メモ'}」を削除しますか？`)) return;
-                      notes = notes.filter(x => x.id !== n.id);
-                      save();
-                      render();
-                    } }, '🗑')))
+                  h('div', { class: 'vstack', style: 'gap:6px' },
+                    h('button', { class: 'icon-btn', 'aria-label': 'このメモをコピー',
+                      onclick: () => copyNote(n) }, '📋'),
+                    h('button', { class: 'icon-btn danger', 'aria-label': 'このメモを削除',
+                      onclick: () => {
+                        if (!confirm(`「${n.name || 'メモ'}」を削除しますか？`)) return;
+                        notes = notes.filter(x => x.id !== n.id);
+                        save();
+                        render();
+                      } }, '🗑'))))
             : [h('div', { class: 'empty' }, 'リスナーさんのことをメモしておくと、次の配信でも思い出せます📝')]));
       }
       render();
@@ -47,6 +70,8 @@
           } }, '＋ メモを追加')),
         h('div', { class: 'card' },
           h('div', { class: 'section-label' }, '📝 メモ一覧'),
+          h('p', { class: 'warn', style: 'margin:-2px 0 10px;line-height:1.6' },
+            '※ ここでのメモはこの端末・ブラウザだけに保存され、消えてしまうことがあります。大事な内容は📋でコピーして、ご自身のメモ帳などに貼り付けておいてください。'),
           listEl)
       );
     }

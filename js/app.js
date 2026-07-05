@@ -25,6 +25,8 @@
   /* ---- 共通ツール（画面下部固定） ---- */
   const COMMON = ['calc', 'ptconv', 'timer', 'stopwatch', 'memo'];
 
+  const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffQ3-wIxkj7f4A7BEISRkSX90_2Mlj4tSJvbObxFsErTJprg/viewform?usp=publish-editor';
+
   const view = document.getElementById('view');
   const backBtn = document.getElementById('backBtn');
   const nav = document.getElementById('bottomNav');
@@ -68,7 +70,10 @@
         h('h1', {}, '今日の配信、なにする？'),
         h('p', {}, '企画をえらぶと、ぴったりのツールが表示されます')),
       h('div', { class: 'plan-select-wrap' }, select, toolSelect),
-      h('p', { class: 'plan-hint' }, 'よく使うツールは、下のバーからいつでも開けます')
+      h('p', { class: 'plan-hint' }, 'よく使うツールは、下のバーからいつでも開けます'),
+      h('a', { class: 'btn btn-ghost btn-full mt16', href: FEEDBACK_URL, target: '_blank', rel: 'noopener' },
+        '💌 ガーベラの感想・指摘・リクエストなど'),
+      h('p', { class: 'plan-hint', style: 'margin-top:6px' }, 'ガーベラの改良にご協力ください')
     );
   }
 

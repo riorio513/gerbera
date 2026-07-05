@@ -1,0 +1,90 @@
+'use strict';
+/* ツール: 抽選箱（項目追加・ランダム抽選・抽選済み自動除外・リセット） */
+(function () {
+  const { register, Store, h, uid, toast } = Gerbera;
+  const KEY = 'box.items';
+
+  register({
+    id: 'box', name: '抽選箱', icon: '📦',
+    mount(root) {
+      let items = Store.get(KEY, []); // {id, label, drawn}
+      const save = () => Store.set(KEY, items);
+
+      const resultArea = h('div');
+      const poolChips = h('div', { class: 'chip-wrap mt8' });
+      const drawnList = h('div');
+      const countNote = h('div', { class: 'section-label' });
+
+      const addInput = h('input', { class: 'input grow', placeholder: '項目を入力（リスナー名など）',
+        onkeydown: e => { if (e.key === 'Enter') addItem(); } });
+
+      function pool() { return items.filter(it => !it.drawn); }
+
+      function paint() {
+        const rest = pool();
+        countNote.textContent = `📦 箱の中身（残り ${rest.length} 件）`;
+        poolChips.replaceChildren(...(
+          rest.length
+            ? rest.map(it => h('span', { class: 'chip' }, it.label,
+                h('button', { class: 'chip-x', 'aria-label': 'この項目を削除',
+                  onclick: () => {
+                    items = items.filter(x => x.id !== it.id);
+                    save();
+                    paint();
+                  } }, '×')))
+            : [h('div', { class: 'empty grow' }, '箱は空っぽです。項目を追加してね')]));
+        const drawn = items.filter(it => it.drawn);
+        drawnList.replaceChildren(...drawn.map((it, i) =>
+          h('div', { class: 'list-row' },
+            h('span', { class: 'badge' }, i + 1),
+            h('span', { class: 'row-main' }, it.label))));
+      }
+
+      function addItem() {
+        const v = addInput.value.trim();
+        if (!v) return;
+        items.push({ id: uid(), label: v, drawn: false });
+        addInput.value = '';
+        save();
+        paint();
+      }
+
+      function draw() {
+        const rest = pool();
+        if (!rest.length) { toast('箱が空です。リセットするか項目を追加してね'); return; }
+        const hit = rest[Math.floor(Math.random() * rest.length)];
+        hit.drawn = true;
+        save();
+        resultArea.replaceChildren(
+          h('div', { class: 'result-card pop' },
+            h('div', { class: 'result-sub' }, '当たったのは…'),
+            h('div', { class: 'result-main' }, hit.label),
+            h('div', { class: 'result-note' }, `残り ${pool().length} 件`)));
+        paint();
+      }
+
+      root.append(
+        h('div', { class: 'card' },
+          h('div', { class: 'hstack' }, addInput,
+            h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
+          h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '📦 抽選する'),
+          h('div', { class: 'mt16' }, resultArea),
+          h('div', { class: 'mt16' }, countNote, poolChips)),
+        h('div', { class: 'card' },
+          h('div', { class: 'section-label' }, '✅ 抽選済み'),
+          drawnList,
+          h('button', { class: 'btn btn-danger btn-sm btn-full mt12',
+            onclick: () => {
+              if (!items.some(it => it.drawn)) { toast('まだ抽選していません'); return; }
+              if (!confirm('抽選済みの項目をぜんぶ箱に戻しますか？')) return;
+              items.forEach(it => { it.drawn = false; });
+              save();
+              resultArea.replaceChildren();
+              paint();
+              toast('箱をリセットしました');
+            } }, 'リセット（全部箱に戻す）'))
+      );
+      paint();
+    }
+  });
+})();

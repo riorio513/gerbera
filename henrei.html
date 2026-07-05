@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ガーベラ -gerbera-｜返礼品管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF8F0;
+    --sub:#FFE9D6;
+    --card:#FFFFFF;
+    --border:#F3D6B8;
+    --main:#FF7A45;
+    --accent:#E85D2D;
+    --accent-strong:#C6431A;
+    --text:#3A2A1E;
+    --text-sub:#8A7361;
+    --danger:#E0523F;
+    --ok:#4E9E6A;
+    --wait:#B9A48C;
+    --cat-real:#5E8FD6;
+    --cat-digital:#9A6BD6;
+    --cat-letter:#D6A15E;
+    --header-h:60px;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Zen Maru Gothic','Hiragino Sans',sans-serif;
+    font-weight:500;
+    color:var(--text);
+    background:var(--bg);
+    min-height:100vh;
+  }
+  h1,h2,h3,button{font-weight:700;}
+  button{font-family:inherit;cursor:pointer;}
+  #app{padding-top:var(--header-h);padding-bottom:32px;max-width:920px;margin:0 auto;}
+
+  header.top-header{
+    position:fixed;top:0;left:0;right:0;height:var(--header-h);
+    background:var(--card);border-bottom:1px solid var(--border);
+    display:grid;grid-template-columns:64px 1fr 64px;align-items:center;z-index:20;
+  }
+  .back-btn{
+    grid-column:1;justify-self:start;margin-left:8px;display:flex;align-items:center;gap:3px;
+    background:none;border:none;color:var(--accent-strong);font-size:13px;font-weight:700;
+    padding:6px 8px;border-radius:8px;
+  }
+  .back-btn:hover{background:var(--sub);}
+  .brand{grid-column:2;justify-self:center;display:flex;align-items:center;gap:8px;}
+  .brand-mark{width:26px;height:26px;flex-shrink:0;}
+  .brand-title{font-size:19px;font-weight:900;color:var(--accent-strong);letter-spacing:0.03em;}
+  .brand-sub{font-size:11px;color:var(--text-sub);margin-left:4px;}
+
+  .section{padding:16px;}
+
+  /* summary */
+  .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:16px;}
+  .summary-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:10px 6px;text-align:center;
+  }
+  .summary-card .num{font-size:20px;font-weight:900;color:var(--accent-strong);}
+  .summary-card.overdue .num{color:var(--danger);}
+  .summary-card .label{font-size:10px;color:var(--text-sub);margin-top:2px;}
+
+  /* controls */
+  .controls{
+    display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;align-items:center;
+  }
+  .controls select, .controls input[type=text]{
+    font-family:inherit;font-size:13px;padding:7px 10px;border-radius:8px;
+    border:1px solid var(--border);background:var(--card);color:var(--text);
+  }
+  .controls input[type=text]{flex:1;min-width:120px;}
+  .btn-add{
+    margin-left:auto;background:var(--main);color:#fff;border:none;border-radius:20px;
+    padding:9px 18px;font-size:14px;box-shadow:0 2px 6px rgba(255,122,69,0.35);
+  }
+  .btn-add:hover{background:var(--accent);}
+
+  .group-toggle{display:flex;gap:4px;background:var(--sub);border-radius:8px;padding:3px;}
+  .group-toggle button{
+    border:none;background:none;padding:5px 10px;border-radius:6px;font-size:12px;color:var(--text-sub);
+  }
+  .group-toggle button.active{background:var(--card);color:var(--accent-strong);box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+
+  /* list */
+  .listener-group{padding:0 16px;margin-bottom:6px;}
+  .listener-heading{
+    font-size:14px;font-weight:900;color:var(--accent-strong);margin:14px 0 6px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .item-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:12px 14px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px;
+  }
+  .item-card.overdue{border-color:var(--danger);background:#FFF3F1;}
+  .item-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .cat-badge{
+    font-size:11px;font-weight:700;color:#fff;padding:2px 9px;border-radius:10px;flex-shrink:0;
+  }
+  .cat-badge.real{background:var(--cat-real);}
+  .cat-badge.digital{background:var(--cat-digital);}
+  .cat-badge.letter{background:var(--cat-letter);}
+  .item-listener{font-size:13px;color:var(--text-sub);}
+  .item-content{font-size:15px;font-weight:700;flex:1;min-width:100%;}
+  .item-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .item-due{font-size:12px;color:var(--text-sub);}
+  .item-due.overdue{color:var(--danger);font-weight:700;}
+  .status-select{
+    font-family:inherit;font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);
+    background:var(--sub);color:var(--text);font-weight:700;
+  }
+  .item-actions{display:flex;gap:6px;}
+  .icon-btn{
+    border:none;background:none;color:var(--text-sub);font-size:13px;padding:4px 6px;border-radius:6px;
+  }
+  .icon-btn:hover{background:var(--sub);color:var(--accent-strong);}
+
+  .empty-state{text-align:center;color:var(--text-sub);padding:60px 20px;font-size:14px;}
+
+  /* modal */
+  .modal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(58,42,30,0.45);z-index:50;
+    align-items:flex-end;justify-content:center;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--card);border-radius:18px 18px 0 0;width:100%;max-width:480px;
+    padding:20px;max-height:88vh;overflow-y:auto;
+  }
+  .modal h2{margin:0 0 14px;font-size:17px;color:var(--accent-strong);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--text-sub);margin-bottom:5px;font-weight:700;}
+  .field input[type=text], .field input[type=date], .field select, .field textarea{
+    width:100%;font-family:inherit;font-size:14px;padding:9px 10px;border-radius:8px;
+    border:1px solid var(--border);background:#FFFDFB;color:var(--text);
+  }
+  .field textarea{resize:vertical;min-height:50px;}
+  .cat-radio-group{display:flex;gap:8px;}
+  .cat-radio{flex:1;}
+  .cat-radio input{display:none;}
+  .cat-radio label{
+    display:block;text-align:center;padding:9px 4px;border-radius:8px;border:1px solid var(--border);
+    font-size:12px;font-weight:700;color:var(--text-sub);background:#FFFDFB;
+  }
+  .cat-radio input:checked + label.real{background:var(--cat-real);color:#fff;border-color:var(--cat-real);}
+  .cat-radio input:checked + label.digital{background:var(--cat-digital);color:#fff;border-color:var(--cat-digital);}
+  .cat-radio input:checked + label.letter{background:var(--cat-letter);color:#fff;border-color:var(--cat-letter);}
+  .modal-actions{display:flex;gap:8px;margin-top:6px;}
+  .btn-primary, .btn-secondary{
+    flex:1;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;
+  }
+  .btn-primary{background:var(--main);color:#fff;}
+  .btn-secondary{background:var(--sub);color:var(--text-sub);}
+  .btn-delete-modal{background:none;border:none;color:var(--danger);font-size:12px;padding:6px;margin-top:2px;width:100%;}
+</style>
+</head>
+<body>
+<header class="top-header">
+  <button class="back-btn" onclick="location.href='index.html'">← 戻る</button>
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="5" fill="#FF7A45"/>
+      <g fill="#FFB07A">
+        <ellipse cx="16" cy="5" rx="4" ry="7"/>
+        <ellipse cx="16" cy="27" rx="4" ry="7"/>
+        <ellipse cx="5" cy="16" rx="7" ry="4"/>
+        <ellipse cx="27" cy="16" rx="7" ry="4"/>
+      </g>
+      <circle cx="16" cy="16" r="4" fill="#FF7A45"/>
+    </svg>
+    <span class="brand-title">ガーベラ</span>
+    <span class="brand-sub">返礼品管理</span>
+  </div>
+</header>
+
+<div id="app">
+  <div class="summary" id="summary"></div>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="リスナー名で検索">
+    <select id="filterCategory">
+      <option value="all">全カテゴリ</option>
+      <option value="real">リアルグッズ</option>
+      <option value="digital">デジタルグッズ</option>
+      <option value="letter">手紙</option>
+    </select>
+    <select id="filterStatus">
+      <option value="all">全ステータス</option>
+      <option value="todo">未着手</option>
+      <option value="making">作成中</option>
+      <option value="done">完成</option>
+      <option value="sent">送付済み</option>
+    </select>
+    <div class="group-toggle">
+      <button id="groupByListenerBtn" class="active">リスナー別</button>
+      <button id="groupByDueBtn">期日順</button>
+    </div>
+  </div>
+
+  <div class="section" style="padding-top:0;">
+    <button class="btn-add" id="openAddBtn" style="width:100%;">＋ 返礼品を追加</button>
+  </div>
+
+  <div id="listArea"></div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="modalTitle">返礼品を追加</h2>
+    <div class="field">
+      <label>リスナー名</label>
+      <input type="text" id="fListener" placeholder="例）はなこ">
+    </div>
+    <div class="field">
+      <label>カテゴリ</label>
+      <div class="cat-radio-group">
+        <div class="cat-radio">
+          <input type="radio" name="fCategory" id="catReal" value="real">
+          <label class="real" for="catReal">リアル</label>
+        </div>
+        <div class="cat-radio">
+          <input type="radio" name="fCategory" id="catDigital" value="digital">
+          <label class="digital" for="catDigital">デジタル</label>
+        </div>
+        <div class="cat-radio">
+          <input type="radio" name="fCategory" id="catLetter" value="letter">
+          <label class="letter" for="catLetter">手紙</label>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>送るもの</label>
+      <input type="text" id="fContent" placeholder="例）お礼イラスト色紙">
+    </div>
+    <div class="field">
+      <label>期日</label>
+      <input type="date" id="fDue">
+    </div>
+    <div class="field">
+      <label>ステータス</label>
+      <select id="fStatus">
+        <option value="todo">未着手</option>
+        <option value="making">作成中</option>
+        <option value="done">完成</option>
+        <option value="sent">送付済み</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>メモ（任意）</label>
+      <textarea id="fNote" placeholder="住所・希望内容などのメモ"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancelBtn">キャンセル</button>
+      <button class="btn-primary" id="saveBtn">保存する</button>
+    </div>
+    <button class="btn-delete-modal" id="deleteBtn" style="display:none;">この返礼品を削除する</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'gerbera-items-v1';
+const CAT_LABEL = {real:'リアル', digital:'デジタル', letter:'手紙'};
+const STATUS_LABEL = {todo:'未着手', making:'作成中', done:'完成', sent:'送付済み'};
+
+let items = load();
+let editingId = null;
+let groupMode = 'listener'; // 'listener' | 'due'
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+function uid(){
+  return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+function isOverdue(item){
+  return item.due && item.due < todayStr() && item.status !== 'sent' && item.status !== 'done';
+}
+
+function getFiltered(){
+  const q = document.getElementById('searchInput').value.trim();
+  const cat = document.getElementById('filterCategory').value;
+  const st = document.getElementById('filterStatus').value;
+  return items.filter(it=>{
+    if(q && !it.listener.includes(q)) return false;
+    if(cat !== 'all' && it.category !== cat) return false;
+    if(st !== 'all' && it.status !== st) return false;
+    return true;
+  });
+}
+
+function renderSummary(){
+  const total = items.length;
+  const counts = {todo:0, making:0, done:0, sent:0};
+  let overdue = 0;
+  items.forEach(it=>{
+    counts[it.status] = (counts[it.status]||0) + 1;
+    if(isOverdue(it)) overdue++;
+  });
+  const el = document.getElementById('summary');
+  el.innerHTML = `
+    <div class="summary-card"><div class="num">${total}</div><div class="label">合計</div></div>
+    <div class="summary-card"><div class="num">${counts.todo}</div><div class="label">未着手</div></div>
+    <div class="summary-card"><div class="num">${counts.making}</div><div class="label">作成中</div></div>
+    <div class="summary-card"><div class="num">${counts.done+counts.sent}</div><div class="label">完成/送付</div></div>
+    <div class="summary-card overdue"><div class="num">${overdue}</div><div class="label">期限超過</div></div>
+  `;
+}
+
+function itemCardHTML(it){
+  const overdue = isOverdue(it);
+  return `
+    <div class="item-card ${overdue?'overdue':''}" data-id="${it.id}">
+      <div class="item-top">
+        <span class="cat-badge ${it.category}">${CAT_LABEL[it.category]}</span>
+        <span class="item-listener">${escapeHtml(it.listener)}</span>
+        <span class="item-content">${escapeHtml(it.content)}</span>
+      </div>
+      <div class="item-bottom">
+        <span class="item-due ${overdue?'overdue':''}">${it.due ? '期日: '+it.due+(overdue?'（超過）':'') : '期日未設定'}</span>
+        <div class="item-actions">
+          <select class="status-select" data-id="${it.id}">
+            ${Object.entries(STATUS_LABEL).map(([k,v])=>`<option value="${k}" ${it.status===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+          <button class="icon-btn edit-btn" data-id="${it.id}">編集</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderList(){
+  const listArea = document.getElementById('listArea');
+  const filtered = getFiltered();
+
+  if(filtered.length === 0){
+    listArea.innerHTML = `<div class="empty-state">${items.length===0 ? '返礼品がまだ登録されていません。「＋返礼品を追加」から登録しましょう。' : '条件に一致する返礼品がありません。'}</div>`;
+    return;
+  }
+
+  if(groupMode === 'due'){
+    const sorted = [...filtered].sort((a,b)=>{
+      if(!a.due && !b.due) return 0;
+      if(!a.due) return 1;
+      if(!b.due) return -1;
+      return a.due.localeCompare(b.due);
+    });
+    listArea.innerHTML = `<div class="listener-group">${sorted.map(itemCardHTML).join('')}</div>`;
+  } else {
+    const byListener = {};
+    filtered.forEach(it=>{
+      if(!byListener[it.listener]) byListener[it.listener] = [];
+      byListener[it.listener].push(it);
+    });
+    const names = Object.keys(byListener).sort();
+    listArea.innerHTML = names.map(name=>{
+      const list = byListener[name].sort((a,b)=> (a.due||'9999').localeCompare(b.due||'9999'));
+      return `
+        <div class="listener-group">
+          <div class="listener-heading">👤 ${escapeHtml(name)}（${list.length}件）</div>
+          ${list.map(itemCardHTML).join('')}
+        </div>
+      `;
+    }).join('');
+  }
+
+  listArea.querySelectorAll('.status-select').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const id = e.target.dataset.id;
+      const item = items.find(i=>i.id===id);
+      if(item){ item.status = e.target.value; save(); renderAll(); }
+    });
+  });
+  listArea.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>openModal(e.target.dataset.id));
+  });
+}
+
+function renderAll(){
+  renderSummary();
+  renderList();
+}
+
+function openModal(id){
+  editingId = id || null;
+  const item = id ? items.find(i=>i.id===id) : null;
+  document.getElementById('modalTitle').textContent = item ? '返礼品を編集' : '返礼品を追加';
+  document.getElementById('fListener').value = item ? item.listener : '';
+  document.getElementById('fContent').value = item ? item.content : '';
+  document.getElementById('fDue').value = item ? (item.due||'') : '';
+  document.getElementById('fStatus').value = item ? item.status : 'todo';
+  document.getElementById('fNote').value = item ? (item.note||'') : '';
+  const cat = item ? item.category : 'real';
+  document.getElementById('catReal').checked = cat === 'real';
+  document.getElementById('catDigital').checked = cat === 'digital';
+  document.getElementById('catLetter').checked = cat === 'letter';
+  document.getElementById('deleteBtn').style.display = item ? 'block' : 'none';
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modalBackdrop').classList.remove('open');
+  editingId = null;
+}
+
+document.getElementById('openAddBtn').addEventListener('click', ()=>openModal(null));
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', e=>{
+  if(e.target.id === 'modalBackdrop') closeModal();
+});
+
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const listener = document.getElementById('fListener').value.trim();
+  const content = document.getElementById('fContent').value.trim();
+  const due = document.getElementById('fDue').value;
+  const status = document.getElementById('fStatus').value;
+  const note = document.getElementById('fNote').value.trim();
+  const catInput = document.querySelector('input[name=fCategory]:checked');
+  const category = catInput ? catInput.value : 'real';
+
+  if(!listener || !content){
+    alert('リスナー名と送るものは必須です。');
+    return;
+  }
+
+  if(editingId){
+    const item = items.find(i=>i.id===editingId);
+    Object.assign(item, {listener, content, due, status, note, category});
+  } else {
+    items.push({id: uid(), listener, content, due, status, note, category});
+  }
+  save();
+  closeModal();
+  renderAll();
+});
+
+document.getElementById('deleteBtn').addEventListener('click', ()=>{
+  if(!editingId) return;
+  if(confirm('この返礼品を削除しますか？')){
+    items = items.filter(i=>i.id!==editingId);
+    save();
+    closeModal();
+    renderAll();
+  }
+});
+
+document.getElementById('searchInput').addEventListener('input', renderList);
+document.getElementById('filterCategory').addEventListener('change', renderList);
+document.getElementById('filterStatus').addEventListener('change', renderList);
+
+document.getElementById('groupByListenerBtn').addEventListener('click', ()=>{
+  groupMode = 'listener';
+  document.getElementById('groupByListenerBtn').classList.add('active');
+  document.getElementById('groupByDueBtn').classList.remove('active');
+  renderList();
+});
+document.getElementById('groupByDueBtn').addEventListener('click', ()=>{
+  groupMode = 'due';
+  document.getElementById('groupByDueBtn').classList.add('active');
+  document.getElementById('groupByListenerBtn').classList.remove('active');
+  renderList();
+});
+
+renderAll();
+</script>
+</body>
+</html>

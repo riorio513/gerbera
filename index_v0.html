@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ガーベラ -gerbera-</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF8F0;
+    --sub:#FFE9D6;
+    --card:#FFFFFF;
+    --border:#F3D6B8;
+    --main:#FF7A45;
+    --accent:#E85D2D;
+    --accent-strong:#C6431A;
+    --text:#3A2A1E;
+    --text-sub:#8A7361;
+    --header-h:60px;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Zen Maru Gothic','Hiragino Sans',sans-serif;
+    font-weight:500;
+    color:var(--text);
+    background:var(--bg);
+    min-height:100vh;
+  }
+  h1,h2,h3,button{font-weight:700;}
+  button{font-family:inherit;cursor:pointer;}
+
+  header.top-header{
+    position:fixed;top:0;left:0;right:0;height:var(--header-h);
+    background:var(--card);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:8px;}
+  .brand-mark{width:26px;height:26px;flex-shrink:0;}
+  .brand-title{font-size:19px;font-weight:900;color:var(--accent-strong);letter-spacing:0.03em;}
+
+  #app{padding-top:var(--header-h);max-width:640px;margin:0 auto;padding-bottom:32px;}
+  .intro{padding:28px 20px 10px;text-align:center;}
+  .intro h1{font-size:20px;margin:0 0 6px;color:var(--accent-strong);}
+  .intro p{font-size:13px;color:var(--text-sub);margin:0;line-height:1.6;}
+
+  .menu{padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+  .menu-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--text);
+    box-shadow:0 2px 6px rgba(198,67,26,0.06);
+  }
+  .menu-card.enabled:hover{border-color:var(--main);}
+  .menu-card.disabled{opacity:0.55;pointer-events:none;}
+  .menu-icon{
+    width:44px;height:44px;flex-shrink:0;border-radius:12px;background:var(--sub);
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+  }
+  .menu-body{flex:1;}
+  .menu-title{font-size:15px;font-weight:700;margin-bottom:2px;}
+  .menu-desc{font-size:12px;color:var(--text-sub);}
+  .menu-badge{
+    font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;flex-shrink:0;
+    background:var(--sub);color:var(--accent-strong);
+  }
+  .menu-badge.soon{background:#EEE7DD;color:var(--text-sub);}
+  .menu-arrow{color:var(--text-sub);font-size:16px;flex-shrink:0;}
+</style>
+</head>
+<body>
+<header class="top-header">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="5" fill="#FF7A45"/>
+      <g fill="#FFB07A">
+        <ellipse cx="16" cy="5" rx="4" ry="7"/>
+        <ellipse cx="16" cy="27" rx="4" ry="7"/>
+        <ellipse cx="5" cy="16" rx="7" ry="4"/>
+        <ellipse cx="27" cy="16" rx="7" ry="4"/>
+      </g>
+      <circle cx="16" cy="16" r="4" fill="#FF7A45"/>
+    </svg>
+    <span class="brand-title">ガーベラ</span>
+  </div>
+</header>
+
+<div id="app">
+  <div class="intro">
+    <h1>IRIAMライバーのお助けツール</h1>
+    <p>ガチイベ運営にまつわる作業をちょっとラクにする道具箱です。<br>使いたいツールを選んでください。</p>
+  </div>
+
+  <div class="menu">
+    <div class="menu-card disabled">
+      <div class="menu-icon">🖼️</div>
+      <div class="menu-body">
+        <div class="menu-title">サムネイル作成</div>
+        <div class="menu-desc">テンプレートに文字入れしてガチイベ用サムネを作成</div>
+      </div>
+      <span class="menu-badge soon">準備中</span>
+    </div>
+
+    <div class="menu-card disabled">
+      <div class="menu-icon">📋</div>
+      <div class="menu-body">
+        <div class="menu-title">企画ヘッダー作成</div>
+        <div class="menu-desc">企画内容説明用のヘッダー画像を作成</div>
+      </div>
+      <span class="menu-badge soon">準備中</span>
+    </div>
+
+    <div class="menu-card disabled">
+      <div class="menu-icon">📣</div>
+      <div class="menu-body">
+        <div class="menu-title">スケジュール告知画像作成</div>
+        <div class="menu-desc">X投稿用のガチイベスケジュール画像を作成</div>
+      </div>
+      <span class="menu-badge soon">準備中</span>
+    </div>
+
+    <a class="menu-card enabled" href="henrei.html">
+      <div class="menu-icon">🎁</div>
+      <div class="menu-body">
+        <div class="menu-title">返礼品管理</div>
+        <div class="menu-desc">リスナーごとの返礼品と進捗・期日を管理</div>
+      </div>
+      <span class="menu-arrow">›</span>
+    </a>
+  </div>
+</div>
+</body>
+</html>

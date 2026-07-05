@@ -35,6 +35,10 @@
       }
 
       /* --- 景品編集 --- */
+      const editHeader = h('div', { class: 'hstack', style: 'gap:9px;padding:0 2px' },
+        h('span', { class: 'input-label', style: 'margin:0;flex:1' }, '景品名'),
+        h('span', { class: 'input-label', style: 'margin:0;width:76px;text-align:center' }, '排出率'),
+        h('span', { style: 'width:38px;flex-shrink:0' }));
       const editList = h('div');
       const totalNote = h('div', { class: 'note mt8' });
       function paintTotal() {
@@ -47,7 +51,7 @@
             h('input', { class: 'input grow', value: it.name, placeholder: '景品名',
               oninput: e => { it.name = e.target.value; save(); } }),
             h('input', { class: 'input w-num', type: 'number', min: 0, step: 'any', inputmode: 'decimal',
-              value: it.rate, placeholder: '率', 'aria-label': '排出率',
+              value: it.rate, placeholder: '排出率', 'aria-label': '排出率',
               oninput: e => { it.rate = e.target.value === '' ? 0 : +e.target.value; save(); paintTotal(); } }),
             h('button', { class: 'icon-btn danger', 'aria-label': 'この景品を削除',
               onclick: () => {
@@ -56,6 +60,7 @@
                 renderEditor();
                 emptyMsg.hidden = items.length > 0;
               } }, '🗑'))));
+        editHeader.hidden = items.length === 0;
         paintTotal();
       }
       renderEditor();
@@ -69,6 +74,7 @@
           h('details', { class: 'editor' },
             h('summary', {}, '⚙️ 景品と排出率を編集する'),
             h('div', { class: 'editor-body' },
+              editHeader,
               editList,
               totalNote,
               h('button', { class: 'btn btn-ghost btn-sm btn-full mt12',

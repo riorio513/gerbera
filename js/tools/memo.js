@@ -35,19 +35,20 @@
 
       const listEl = h('div');
       function render() {
+        listEl.className = notes.length ? 'memo-grid' : '';
         listEl.replaceChildren(...(
           notes.length
             ? notes.map(n =>
-                h('div', { class: 'list-row', style: 'align-items:flex-start' },
-                  h('div', { class: 'grow vstack', style: 'gap:6px' },
-                    h('input', { class: 'input', value: n.name, placeholder: '名前', style: 'font-weight:700',
-                      oninput: e => { n.name = e.target.value; save(); } }),
-                    h('textarea', { class: 'input', style: 'min-height:56px',
-                      oninput: e => { n.note = e.target.value; save(); } }, n.note)),
-                  h('div', { class: 'vstack', style: 'gap:6px' },
-                    h('button', { class: 'icon-btn', 'aria-label': 'このメモをコピー',
+                h('div', { class: 'memo-tile' },
+                  h('input', { class: 'input', value: n.name, placeholder: '名前',
+                    style: 'font-weight:700;font-size:12.5px;padding:7px 10px',
+                    oninput: e => { n.name = e.target.value; save(); } }),
+                  h('textarea', { class: 'input', style: 'min-height:64px;font-size:12.5px;padding:7px 10px',
+                    oninput: e => { n.note = e.target.value; save(); } }, n.note),
+                  h('div', { class: 'memo-tile-actions' },
+                    h('button', { class: 'icon-btn icon-btn-sm', 'aria-label': 'このメモをコピー',
                       onclick: () => copyNote(n) }, '📋'),
-                    h('button', { class: 'icon-btn danger', 'aria-label': 'このメモを削除',
+                    h('button', { class: 'icon-btn icon-btn-sm danger', 'aria-label': 'このメモを削除',
                       onclick: () => {
                         if (!confirm(`「${n.name || 'メモ'}」を削除しますか？`)) return;
                         notes = notes.filter(x => x.id !== n.id);

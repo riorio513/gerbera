@@ -44,7 +44,7 @@
 
         function bump(sign) {
           const next = c.value + sign * c.step;
-          c.value = Math.min(limit(), Math.max(0, next));
+          c.value = Math.min(limit(), next);
           save();
           paint();
         }
@@ -60,21 +60,25 @@
           }, '×' + s));
 
         const settings = h('div', { class: 'cnt-settings', hidden: true },
-          h('div', { class: 'hstack', style: 'flex-wrap:wrap;justify-content:center;gap:6px' },
-            stepChips,
-            h('div', { class: 'hstack', style: 'margin-left:auto' },
-              h('span', { class: 'note' }, '上限'),
-              h('input', { class: 'input w-num', type: 'number', min: 1, inputmode: 'numeric',
-                value: c.limit === null ? '' : c.limit, placeholder: String(DEFAULT_LIMIT),
-                oninput: e => {
-                  const v = e.target.value;
-                  c.limit = v === '' ? null : Math.max(1, +v);
-                  save();
-                  paint();
-                } }))));
+          h('div', { class: 'note', style: 'margin-bottom:6px;font-weight:700' }, '⚙ このカウンターの詳細設定'),
+          h('span', { class: 'note' }, '1回で増減する数'),
+          h('div', { class: 'hstack', style: 'flex-wrap:wrap;gap:6px;margin-top:4px' }, stepChips),
+          h('div', { class: 'hstack mt12' },
+            h('span', { class: 'note' }, '上限（達成の目安）'),
+            h('input', { class: 'input w-num', type: 'number', min: 1, inputmode: 'numeric',
+              value: c.limit === null ? '' : c.limit, placeholder: String(DEFAULT_LIMIT),
+              oninput: e => {
+                const v = e.target.value;
+                c.limit = v === '' ? null : Math.max(1, +v);
+                save();
+                paint();
+              } })));
 
-        const moreBtn = h('button', { class: 'cnt-more', 'aria-label': '詳細設定を開く',
-          onclick: () => { settings.hidden = !settings.hidden; } }, '⚙');
+        const moreBtn = h('button', { class: 'cnt-more', 'aria-label': '増減数・上限の設定を開く',
+          onclick: () => {
+            settings.hidden = !settings.hidden;
+            moreBtn.classList.toggle('open', !settings.hidden);
+          } }, h('span', {}, '⚙'), h('span', { class: 'cnt-more-label' }, '設定'));
 
         const row = h('div', { class: 'cnt-row' },
           h('button', { class: 'cnt-btn minus', onclick: () => bump(-1), 'aria-label': '減らす' }, '−'),

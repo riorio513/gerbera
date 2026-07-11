@@ -261,10 +261,22 @@ select.input{
 }
 .cnt-name:focus{outline:none;border-bottom-color:var(--main-soft);color:var(--text);}
 .cnt-more{
-  width:26px;height:26px;flex-shrink:0;border-radius:50%;font-size:13px;color:var(--text-sub);
-  background:var(--bg-soft);display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;height:26px;border-radius:999px;font-size:12px;color:var(--main-strong);
+  background:var(--main-faint);border:1.5px solid var(--main-soft);
+  display:flex;align-items:center;justify-content:center;gap:3px;padding:0 9px;
 }
+.cnt-more-label{font-size:9.5px;font-weight:700;}
+.cnt-more.open{background:var(--main);border-color:var(--main);color:#fff;}
 .cnt-settings{padding:10px 2px 2px;border-top:1px dashed var(--line);margin-top:8px;}
+
+/* ---------- メモ（グリッド表示・件数が多くても見返しやすい） ---------- */
+.memo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.memo-tile{
+  background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius-s);
+  padding:10px;display:flex;flex-direction:column;gap:6px;
+}
+.memo-tile-actions{display:flex;justify-content:flex-end;gap:6px;}
+.icon-btn-sm{width:30px;height:30px;font-size:13px;}
 
 /* ---------- ラップ・リスト行 ---------- */
 .list-row{

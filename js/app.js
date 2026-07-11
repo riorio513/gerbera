@@ -23,7 +23,7 @@
   ];
 
   /* ---- 共通ツール（画面下部固定） ---- */
-  const COMMON = ['calc', 'ptconv', 'timer', 'stopwatch', 'memo'];
+  const COMMON = ['calc', 'ptconv', 'timer', 'stopwatch', 'memo', 'note'];
 
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffQ3-wIxkj7f4A7BEISRkSX90_2Mlj4tSJvbObxFsErTJprg/viewform?usp=publish-editor';
 

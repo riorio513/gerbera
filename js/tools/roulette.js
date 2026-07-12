@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ルーレット（項目自由追加・編集・保存・ランダム抽選） */
 (function () {
-  const { register, Store, h, uid, toast, openX } = Gerbera;
+  const { register, Store, h, uid, toast, openX, shareResultImage } = Gerbera;
   const KEY = 'roulette.items';
   const COLORS = ['#F2C4D6', '#D9CDF0', '#F9DFEA', '#C8B9E8', '#F3D0DF', '#E3DBF5'];
   const SVGNS = 'http://www.w3.org/2000/svg';
@@ -76,11 +76,15 @@
 
       let lastWinnerLabel = null;
       const resultArea = h('div');
-      const postBtn = h('button', { class: 'btn btn-lav btn-full mt8', hidden: true,
+      function postText() { return `【ルーレット】\nただいまのルーレット結果は${lastWinnerLabel}でした！`; }
+      const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
+        onclick: () => { if (lastWinnerLabel) openX(postText()); } }, '🐦 文章でポスト');
+      const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!lastWinnerLabel) return;
-          openX(`【ルーレット】\nただいまのルーレット結果は${lastWinnerLabel}でした！`);
-        } }, '🐦 結果をXへポスト');
+          shareResultImage({ badge: '【ルーレット】', main: lastWinnerLabel, note: '', postText: postText() });
+        } }, '🖼️ 画像でポスト');
+      const postRow = h('div', { class: 'hstack mt8' }, postBtn, postImgBtn);
       const emptyMsg = h('div', { class: 'empty', hidden: items.length > 0 },
         '項目がまだありません。', h('br'), '下の「項目を編集する」から追加してね');
 
@@ -109,6 +113,7 @@
             spinBtn.disabled = false;
             lastWinnerLabel = items[winner].label;
             postBtn.hidden = false;
+            postImgBtn.hidden = false;
             resultArea.replaceChildren(
               h('div', { class: 'result-card pop' },
                 h('div', { class: 'result-sub' }, '結果は…'),
@@ -154,7 +159,7 @@
       root.append(
         h('div', { class: 'card' },
           resultArea,
-          postBtn,
+          postRow,
           h('div', { class: 'wheel-wrap mt12' }, svg),
           emptyMsg,
           spinBtn,

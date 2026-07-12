@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ダイス（面数変更・個数変更・複数同時） */
 (function () {
-  const { register, Store, h, openX } = Gerbera;
+  const { register, Store, h, openX, shareResultImage } = Gerbera;
   const KEY = 'dice';
 
   register({
@@ -29,11 +29,20 @@
       let rolling = false;
       let lastFinals = null;
       const ROLL_MS = 620;
-      const postBtn = h('button', { class: 'btn btn-lav btn-full mt8', hidden: true,
+      function postText() { return `【ダイス】\nダイスの結果は${lastFinals.join('・')}でした！`; }
+      const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
+        onclick: () => { if (lastFinals) openX(postText()); } }, '🐦 文章でポスト');
+      const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!lastFinals) return;
-          openX(`【ダイス】\nダイスの結果は${lastFinals.join('・')}でした！`);
-        } }, '🐦 結果をXへポスト');
+          shareResultImage({
+            badge: '【ダイス】',
+            main: lastFinals.join('・'),
+            note: lastFinals.length > 1 ? '合計 ' + lastFinals.reduce((a, b) => a + b, 0) : '',
+            postText: postText()
+          });
+        } }, '🖼️ 画像でポスト');
+      const postRow = h('div', { class: 'hstack mt8' }, postBtn, postImgBtn);
 
       function roll() {
         if (rolling) return;
@@ -66,6 +75,7 @@
           rollBtn.disabled = false;
           lastFinals = finals;
           postBtn.hidden = false;
+          postImgBtn.hidden = false;
         }, totalDelay);
       }
 
@@ -85,7 +95,7 @@
           h('div', { class: 'mt16' }, resultBox),
           h('div', { class: 'mt8' }, totalBox),
           rollBtn,
-          postBtn)
+          postRow)
       );
     }
   });

@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: 抽選箱（項目追加・ランダム抽選・抽選済み自動除外・リセット） */
 (function () {
-  const { register, Store, h, uid, toast, openX } = Gerbera;
+  const { register, Store, h, uid, toast, openX, shareResultImage } = Gerbera;
   const KEY = 'box.items';
 
   register({
@@ -13,12 +13,19 @@
       const nameInput = h('input', { class: 'input', placeholder: '抽選する人の名前（省略OK）' });
       const resultArea = h('div');
       let last = null; // {who, label}
-      const postBtn = h('button', { class: 'btn btn-lav btn-full mt8', hidden: true,
+      function postText() {
+        const subject = last.who ? `${last.who}さんの抽選結果` : '抽選結果';
+        return `【抽選結果】\n${subject}は${last.label}でした！`;
+      }
+      const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
+        onclick: () => { if (last) openX(postText()); } }, '🐦 文章でポスト');
+      const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!last) return;
-          const subject = last.who ? `${last.who}さんの抽選結果` : '抽選結果';
-          openX(`【抽選結果】\n${subject}は${last.label}でした！`);
-        } }, '🐦 結果をXへポスト');
+          shareResultImage({ badge: '【抽選結果】' + (last.who ? `${last.who}さんの結果` : ''),
+            main: last.label, note: '', postText: postText() });
+        } }, '🖼️ 画像でポスト');
+      const postRow = h('div', { class: 'hstack mt8' }, postBtn, postImgBtn);
       const poolChips = h('div', { class: 'chip-wrap mt8' });
       const drawnList = h('div');
       const countNote = h('div', { class: 'section-label' });
@@ -65,6 +72,7 @@
         save();
         last = { who: nameInput.value.trim(), label: hit.label };
         postBtn.hidden = false;
+        postImgBtn.hidden = false;
         resultArea.replaceChildren(
           h('div', { class: 'result-card pop' },
             h('div', { class: 'result-sub' }, '当たったのは…'),
@@ -80,7 +88,7 @@
             h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
           h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '📦 抽選する'),
           h('div', { class: 'mt16' }, resultArea),
-          postBtn,
+          postRow,
           h('div', { class: 'mt16' }, countNote, poolChips)),
         h('div', { class: 'card' },
           h('div', { class: 'section-label' }, '✅ 抽選済み'),

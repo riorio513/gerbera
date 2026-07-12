@@ -125,5 +125,118 @@ window.Gerbera = (function () {
     window.open('https://x.com/intent/post?text=' + encodeURIComponent(text), '_blank', 'noopener');
   }
 
-  return { Store, register, getTool, tools, h, uid, emitter, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openX };
+  /* ---- 結果カード画像の生成（Canvas） ---- */
+  function roundRect(ctx, x, y, w, hgt, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + hgt, r);
+    ctx.arcTo(x + w, y + hgt, x, y + hgt, r);
+    ctx.arcTo(x, y + hgt, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function wrapLines(ctx, text, maxWidth) {
+    const lines = [];
+    String(text).split('\n').forEach(paragraph => {
+      let line = '';
+      for (const ch of paragraph) {
+        const test = line + ch;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = ch;
+        } else {
+          line = test;
+        }
+      }
+      lines.push(line);
+    });
+    return lines;
+  }
+  function drawWrapped(ctx, text, cx, y, maxWidth, lineHeight) {
+    const lines = wrapLines(ctx, text, maxWidth);
+    lines.forEach((line, i) => ctx.fillText(line, cx, y + i * lineHeight));
+    return y + lines.length * lineHeight;
+  }
+
+  function buildResultCanvas({ badge, main, note }) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200; canvas.height = 675;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createLinearGradient(0, 0, 1200, 675);
+    grad.addColorStop(0, '#FBEFF4');
+    grad.addColorStop(1, '#EDE9F7');
+    ctx.fillStyle = grad;
+    roundRect(ctx, 0, 0, 1200, 675, 0);
+    ctx.fill();
+
+    ctx.strokeStyle = '#F6E3EB';
+    ctx.lineWidth = 8;
+    roundRect(ctx, 20, 20, 1160, 635, 40);
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    let y = 190;
+    if (badge) {
+      ctx.fillStyle = '#96829F';
+      ctx.font = '700 34px "Zen Maru Gothic", sans-serif';
+      y = drawWrapped(ctx, badge, 600, y, 980, 46) + 40;
+    }
+    if (main) {
+      ctx.fillStyle = '#A85875';
+      ctx.font = '900 88px "Zen Maru Gothic", sans-serif';
+      y = drawWrapped(ctx, main, 600, y, 1020, 104) + 26;
+    }
+    if (note) {
+      ctx.fillStyle = '#43324E';
+      ctx.font = '700 36px "Zen Maru Gothic", sans-serif';
+      drawWrapped(ctx, note, 600, y, 1000, 50);
+    }
+
+    ctx.fillStyle = '#C06F8D';
+    ctx.font = '700 26px "Zen Maru Gothic", sans-serif';
+    ctx.fillText('🌸 ガーベラ', 600, 628);
+
+    return canvas;
+  }
+
+  /* 結果を画像化し、可能ならクリップボードへコピーしてからXの投稿画面を開く。
+     クリップボード書き込みに対応していない環境では画像をダウンロードし、
+     手動で添付してもらう。 */
+  async function shareResultImage({ badge, main, note, postText }) {
+    let blob;
+    try {
+      const canvas = buildResultCanvas({ badge, main, note });
+      blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    } catch (e) {
+      toast('画像の作成に失敗しました');
+      openX(postText);
+      return;
+    }
+    if (!blob) { openX(postText); return; }
+
+    let copied = false;
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        copied = true;
+      } catch (e) { copied = false; }
+    }
+
+    if (copied) {
+      toast('🖼️ 画像をコピーしました。投稿画面でCtrl+V（貼り付け）してね');
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'gerbera-result.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 8000);
+      toast('🖼️ 画像を保存しました。投稿画面に手動で添付してね');
+    }
+    openX(postText);
+  }
+
+  return { Store, register, getTool, tools, h, uid, emitter, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openX, shareResultImage };
 })();

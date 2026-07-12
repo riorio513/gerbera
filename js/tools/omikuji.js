@@ -25,10 +25,10 @@
         class: 'btn btn-lav btn-full mt8', hidden: true,
         onclick: () => {
           if (!last) return;
-          const who = last.listener ? last.listener + 'さん' : '今日';
-          openX(`【おみくじ】${who}の運勢は「${last.lot.name}」でした🌸\n${last.lot.comment}`);
+          const subject = last.listener ? `${last.listener}さんの今日の運勢` : '今日の運勢';
+          openX(`【おみくじ】\n${subject}は${last.lot.name}でした！${last.lot.comment}`);
         }
-      }, '🕊️ 結果をXへポスト');
+      }, '🐦 結果をXへポスト');
 
       function draw() {
         if (!lots.length) { toast('くじがありません。編集から追加してね'); return; }

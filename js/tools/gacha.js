@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ガチャ（抽選結果編集・排出率設定・リスナー名入力・結果表示） */
 (function () {
-  const { register, Store, h, uid, toast } = Gerbera;
+  const { register, Store, h, uid, toast, openX } = Gerbera;
   const KEY = 'gacha.items';
 
   register({
@@ -12,6 +12,13 @@
 
       const nameInput = h('input', { class: 'input', placeholder: 'リスナーさんの名前（省略OK）' });
       const resultArea = h('div');
+      let last = null; // {who, hitName}
+      const postBtn = h('button', { class: 'btn btn-lav btn-full mt8', hidden: true,
+        onclick: () => {
+          if (!last) return;
+          const subject = last.who ? `${last.who}さんのガチャ結果` : 'ガチャ結果';
+          openX(`【ガチャ】\n${subject}は${last.hitName}でした！`);
+        } }, '🐦 結果をXへポスト');
       const emptyMsg = h('div', { class: 'empty', hidden: items.length > 0 },
         '景品がまだありません。', h('br'), '下の「景品と排出率を編集する」から追加してね');
 
@@ -27,6 +34,8 @@
         }
         const who = nameInput.value.trim();
         const pct = Math.round((+hit.rate / total) * 1000) / 10;
+        last = { who, hitName: hit.name };
+        postBtn.hidden = false;
         resultArea.replaceChildren(
           h('div', { class: 'result-card pop' },
             h('div', { class: 'result-sub' }, who ? `${who} さんの結果` : 'ガチャの結果'),
@@ -70,6 +79,7 @@
           nameInput,
           h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '🎁 ガチャを回す'),
           h('div', { class: 'mt16' }, resultArea),
+          postBtn,
           emptyMsg,
           h('details', { class: 'editor' },
             h('summary', {}, '⚙️ 景品と排出率を編集する'),

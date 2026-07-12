@@ -4,9 +4,10 @@
    小さいコンパクトな行にまとめ、スクロールなしで並べられるようにする。
    加算単位・上限などの細かい設定は行の下に折りたたんで表示する。 */
 (function () {
-  const { register, Store, h, uid, toast, fmtNum } = Gerbera;
+  const { register, Store, h, uid, toast, fmtNum, openX } = Gerbera;
   const KEY = 'counters';
   const DEFAULT_LIMIT = 99999;
+  const MIN_VALUE = -99999;
   const MAX_COUNTERS = 20;
   const STEPS = [1, 10, 100, 1000];
 
@@ -44,25 +45,36 @@
 
         function bump(sign) {
           const next = c.value + sign * c.step;
-          c.value = Math.min(limit(), next);
+          c.value = Math.max(MIN_VALUE, Math.min(limit(), next));
           save();
           paint();
         }
 
+        const stepCustom = h('input', { class: 'input w-num', type: 'number', step: 1, inputmode: 'numeric',
+          value: c.step, 'aria-label': '1回で増減する数（自由入力）',
+          oninput: e => {
+            const v = Math.max(1, Math.floor(Math.abs(+e.target.value)) || 1);
+            c.step = v;
+            save();
+            syncStepUI();
+          } });
         const stepChips = STEPS.map(s =>
           h('button', {
             class: 'chip' + (c.step === s ? ' on' : ''),
-            onclick: e => {
-              c.step = s; save();
-              e.target.parentElement.querySelectorAll('.chip').forEach(el => el.classList.remove('on'));
-              e.target.classList.add('on');
-            }
+            onclick: () => { c.step = s; save(); syncStepUI(); }
           }, '×' + s));
+        function syncStepUI() {
+          stepChips.forEach((el, i) => el.classList.toggle('on', c.step === STEPS[i]));
+          if (+stepCustom.value !== c.step) stepCustom.value = c.step;
+        }
 
         const settings = h('div', { class: 'cnt-settings', hidden: true },
           h('div', { class: 'note', style: 'margin-bottom:6px;font-weight:700' }, '⚙ このカウンターの詳細設定'),
-          h('span', { class: 'note' }, '1回で増減する数'),
-          h('div', { class: 'hstack', style: 'flex-wrap:wrap;gap:6px;margin-top:4px' }, stepChips),
+          h('span', { class: 'note' }, '1回で増減する数（よく使う数字、または自由入力）'),
+          h('div', { class: 'hstack', style: 'flex-wrap:wrap;gap:6px;margin-top:4px' },
+            stepChips,
+            h('span', { class: 'note' }, 'または'),
+            stepCustom),
           h('div', { class: 'hstack mt12' },
             h('span', { class: 'note' }, '上限（達成の目安）'),
             h('input', { class: 'input w-num', type: 'number', min: 1, inputmode: 'numeric',
@@ -72,7 +84,11 @@
                 c.limit = v === '' ? null : Math.max(1, +v);
                 save();
                 paint();
-              } })));
+              } })),
+          h('button', { class: 'btn btn-ghost btn-sm btn-full mt12',
+            onclick: () => {
+              openX(`【カウンター】${c.name || 'カウンター'}の今の数は${fmtNum(c.value)}。目標まであと${fmtNum(Math.max(0, limit() - c.value))}です！`);
+            } }, '🐦 Xにポストする'));
 
         const moreBtn = h('button', { class: 'cnt-more', 'aria-label': '増減数・上限の設定を開く',
           onclick: () => {

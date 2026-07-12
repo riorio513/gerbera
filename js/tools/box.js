@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: 抽選箱（項目追加・ランダム抽選・抽選済み自動除外・リセット） */
 (function () {
-  const { register, Store, h, uid, toast } = Gerbera;
+  const { register, Store, h, uid, toast, openX } = Gerbera;
   const KEY = 'box.items';
 
   register({
@@ -10,7 +10,15 @@
       let items = Store.get(KEY, []); // {id, label, drawn}
       const save = () => Store.set(KEY, items);
 
+      const nameInput = h('input', { class: 'input', placeholder: '抽選する人の名前（省略OK）' });
       const resultArea = h('div');
+      let last = null; // {who, label}
+      const postBtn = h('button', { class: 'btn btn-lav btn-full mt8', hidden: true,
+        onclick: () => {
+          if (!last) return;
+          const subject = last.who ? `${last.who}さんの抽選結果` : '抽選結果';
+          openX(`【抽選結果】\n${subject}は${last.label}でした！`);
+        } }, '🐦 結果をXへポスト');
       const poolChips = h('div', { class: 'chip-wrap mt8' });
       const drawnList = h('div');
       const countNote = h('div', { class: 'section-label' });
@@ -55,6 +63,8 @@
         const hit = rest[Math.floor(Math.random() * rest.length)];
         hit.drawn = true;
         save();
+        last = { who: nameInput.value.trim(), label: hit.label };
+        postBtn.hidden = false;
         resultArea.replaceChildren(
           h('div', { class: 'result-card pop' },
             h('div', { class: 'result-sub' }, '当たったのは…'),
@@ -65,10 +75,12 @@
 
       root.append(
         h('div', { class: 'card' },
-          h('div', { class: 'hstack' }, addInput,
+          nameInput,
+          h('div', { class: 'hstack mt8' }, addInput,
             h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
           h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '📦 抽選する'),
           h('div', { class: 'mt16' }, resultArea),
+          postBtn,
           h('div', { class: 'mt16' }, countNote, poolChips)),
         h('div', { class: 'card' },
           h('div', { class: 'section-label' }, '✅ 抽選済み'),

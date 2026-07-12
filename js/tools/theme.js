@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: トークテーマガチャ（カテゴリー別・更新のたび新しいテーマ） */
 (function () {
-  const { register, h } = Gerbera;
+  const { register, h, openX } = Gerbera;
 
   // カテゴリーごとに山札方式（使い切るまで同じテーマを出さない）
   const decks = {};
@@ -18,10 +18,18 @@
     mount(root) {
       const cats = Object.keys(Gerbera.DATA.talkThemes);
       let cat = cats[0];
+      let lastTheme = null;
 
       const themeEl = h('div', { class: 'result-card' });
+      const postBtn = h('button', { class: 'btn btn-lav btn-full mt12', hidden: true,
+        onclick: () => {
+          if (!lastTheme) return;
+          openX(`ただいま${lastTheme}について雑談中！みんな聞きに来てね！`);
+        } }, '🐦 Xへポスト');
       function draw() {
         const t = drawFrom(cat);
+        lastTheme = t || null;
+        postBtn.hidden = !lastTheme;
         themeEl.replaceChildren(
           h('div', { class: 'result-sub' }, cat),
           h('div', { class: 'result-main pop', style: 'font-size:24px' }, t || 'テーマがありません'));
@@ -41,7 +49,8 @@
         h('div', { class: 'card' },
           chipRow,
           h('div', { class: 'mt12' }, themeEl),
-          h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '💬 新しいテーマ'))
+          h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '💬 新しいテーマ'),
+          postBtn)
       );
       draw();
     }

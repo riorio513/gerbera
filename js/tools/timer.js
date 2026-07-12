@@ -2,7 +2,7 @@
 /* ツール: タイマー（自由な時間指定・カウントダウン・終了通知音・プリセット保存）
    グローバル単一エンジン: 画面を移動しても動き続け、再読込しても復元される */
 (function () {
-  const { register, Store, h, uid, toast, fmtClock, emitter, ensureAudio, chime } = Gerbera;
+  const { register, Store, h, uid, toast, fmtClock, emitter, ensureAudio, chime, openX } = Gerbera;
   const KEY = 'timer.state';
   const KEY_P = 'timer.presets';
 
@@ -114,6 +114,8 @@
       const startBtn = h('button', { class: 'btn btn-primary btn-big', style: 'min-width:132px',
         onclick: () => T.running ? T.pause() : T.start() });
       const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => T.reset() }, 'リセット');
+      const postBtn = h('button', { class: 'btn btn-lav btn-full mt12',
+        onclick: () => openX(`【タイマー】\nただいまの記録は${fmtClock(T.remainMs, false)}でした！`) }, '🐦 記録をXへポスト');
 
       const numIn = (max, label) => h('input', {
         class: 'input w-num', type: 'number', min: 0, max, inputmode: 'numeric', placeholder: '0',
@@ -179,7 +181,8 @@
         h('div', { class: 'card center' },
           display,
           h('div', { class: 'hstack mt12', style: 'justify-content:center' }, startBtn, resetBtn),
-          h('div', { class: 'mt16' }, setRow)),
+          h('div', { class: 'mt16' }, setRow),
+          postBtn),
         h('div', { class: 'card' },
           h('div', { class: 'section-label' }, '💾 プリセット'),
           presetRow)

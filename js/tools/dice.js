@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ダイス（面数変更・個数変更・複数同時） */
 (function () {
-  const { register, Store, h } = Gerbera;
+  const { register, Store, h, openX } = Gerbera;
   const KEY = 'dice';
 
   register({
@@ -27,7 +27,13 @@
       };
 
       let rolling = false;
+      let lastFinals = null;
       const ROLL_MS = 620;
+      const postBtn = h('button', { class: 'btn btn-lav btn-full mt8', hidden: true,
+        onclick: () => {
+          if (!lastFinals) return;
+          openX(`【ダイス】\nダイスの結果は${lastFinals.join('・')}でした！`);
+        } }, '🐦 結果をXへポスト');
 
       function roll() {
         if (rolling) return;
@@ -58,6 +64,8 @@
           totalBox.textContent = st.count > 1 ? '合計 ' + finals.reduce((a, b) => a + b, 0) : '';
           rolling = false;
           rollBtn.disabled = false;
+          lastFinals = finals;
+          postBtn.hidden = false;
         }, totalDelay);
       }
 
@@ -76,7 +84,8 @@
                 h('button', { onclick: () => setCount(1), 'aria-label': '個数を増やす' }, '＋')))),
           h('div', { class: 'mt16' }, resultBox),
           h('div', { class: 'mt8' }, totalBox),
-          rollBtn)
+          rollBtn,
+          postBtn)
       );
     }
   });

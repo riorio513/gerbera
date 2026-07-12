@@ -29,6 +29,7 @@
 
   const view = document.getElementById('view');
   const backBtn = document.getElementById('backBtn');
+  const announceBtn = document.getElementById('announceBtn');
   const nav = document.getElementById('bottomNav');
   const sheet = document.getElementById('sheet');
   const sheetBody = document.getElementById('sheetBody');
@@ -62,7 +63,7 @@
     const toolSelect = h('select', { class: 'plan-select', 'aria-label': 'ツールを選ぶ', style: 'margin-top:12px',
       onchange: e => { if (e.target.value) location.hash = 'tool/' + e.target.value; } },
       h('option', { value: '', selected: true, disabled: true }, '🧰 ツールを選ぶ'),
-      Array.from(Gerbera.tools.values()).map(t => h('option', { value: t.id }, `${t.icon} ${t.name}`)));
+      Array.from(Gerbera.tools.values()).filter(t => t.id !== 'announce').map(t => h('option', { value: t.id }, `${t.icon} ${t.name}`)));
 
     view.replaceChildren(
       h('div', { class: 'home-hero' },
@@ -73,7 +74,8 @@
       h('p', { class: 'plan-hint' }, 'よく使うツールは、下のバーからいつでも開けます'),
       h('a', { class: 'btn btn-ghost btn-full mt16', href: FEEDBACK_URL, target: '_blank', rel: 'noopener' },
         '💌 ガーベラの感想・指摘・リクエストなど'),
-      h('p', { class: 'plan-hint', style: 'margin-top:6px' }, 'ガーベラの改良にご協力ください')
+      h('p', { class: 'plan-hint', style: 'margin-top:6px' },
+        'このツールは個人で作られたものであり、試運転のため、皆様の指摘や感想、リクエストにより改善されます。')
     );
   }
 
@@ -176,6 +178,7 @@
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
   sheetBackdrop.addEventListener('click', closeSheet);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  announceBtn.addEventListener('click', () => openSheet('announce'));
 
   /* 他のツールから共通ツールのシートを開くための窓口（例: pt変換→電卓） */
   Gerbera.openCommonTool = id => openSheet(id);

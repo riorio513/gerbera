@@ -17,14 +17,15 @@
   const TAGLINE = '配信おたすけツール';
   const TITLE = 'ガーベラ';
   const CHAR_MS_MIN = 30, CHAR_MS_MAX = 50;
-  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const START_DELAY = 250; // 開いた瞬間に文字が飛ぶのを防ぐ助走
 
   function charDelay() {
     return CHAR_MS_MIN + Math.random() * (CHAR_MS_MAX - CHAR_MS_MIN);
   }
 
+  // 1文字ずつ出す演出そのものは常に行う（movement効果ではなく文字表示のため）。
+  // 「揺れ・拡大縮小」ではないのでprefers-reduced-motionでは点滅カーソルだけ止める。
   function typeInto(el, text, done) {
-    if (reduced) { el.textContent = text; if (done) done(); return; }
     let i = 0;
     (function step() {
       if (i < text.length) {
@@ -42,13 +43,15 @@
     setTimeout(() => splash.remove(), 550);
   }
 
-  taglineWrap.classList.add('typing');
-  typeInto(taglineEl, TAGLINE, () => {
-    taglineWrap.classList.remove('typing');
-    titleWrap.classList.add('typing');
-    typeInto(titleEl, TITLE, () => {
-      titleWrap.classList.remove('typing');
-      setTimeout(removeSplash, reduced ? 300 : 600);
+  setTimeout(() => {
+    taglineWrap.classList.add('typing');
+    typeInto(taglineEl, TAGLINE, () => {
+      taglineWrap.classList.remove('typing');
+      titleWrap.classList.add('typing');
+      typeInto(titleEl, TITLE, () => {
+        titleWrap.classList.remove('typing');
+        setTimeout(removeSplash, 900);
+      });
     });
-  });
+  }, START_DELAY);
 })();

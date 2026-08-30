@@ -18,6 +18,7 @@
   const TITLE = 'ガーベラ';
   const CHAR_MS_MIN = 60, CHAR_MS_MAX = 100;
   const START_DELAY = 250; // 開いた瞬間に文字が飛ぶのを防ぐ助走
+  const BETWEEN_DELAY = 600; // 「配信おたすけツール」と「ガーベラ」の間の間（0.5秒以上）
 
   function charDelay() {
     return CHAR_MS_MIN + Math.random() * (CHAR_MS_MAX - CHAR_MS_MIN);
@@ -43,15 +44,28 @@
     setTimeout(() => splash.remove(), 550);
   }
 
-  setTimeout(() => {
-    taglineWrap.classList.add('typing');
-    typeInto(taglineEl, TAGLINE, () => {
-      taglineWrap.classList.remove('typing');
-      titleWrap.classList.add('typing');
-      typeInto(titleEl, TITLE, () => {
-        titleWrap.classList.remove('typing');
-        setTimeout(removeSplash, 900);
+  function start() {
+    setTimeout(() => {
+      taglineWrap.classList.add('typing');
+      typeInto(taglineEl, TAGLINE, () => {
+        taglineWrap.classList.remove('typing');
+        setTimeout(() => {
+          titleWrap.classList.add('typing');
+          typeInto(titleEl, TITLE, () => {
+            titleWrap.classList.remove('typing');
+            setTimeout(removeSplash, 900);
+          });
+        }, BETWEEN_DELAY);
       });
-    });
-  }, START_DELAY);
+    }, START_DELAY);
+  }
+
+  // Webフォント（Zen Maru Gothic）の読み込みが演出の途中で完了すると、
+  // 代替フォントから切り替わった瞬間に文字幅が変わってテキストや
+  // アイコンの位置がズレて見える。読み込み完了を待ってから始める。
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(start, start);
+  } else {
+    start();
+  }
 })();

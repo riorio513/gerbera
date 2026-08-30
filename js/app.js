@@ -6,7 +6,7 @@
    - 共通ツール（画面下部固定ナビ + ボトムシート）
    ============================================================ */
 (function () {
-  const { h, getTool, fmtClock } = Gerbera;
+  const { h, getTool, fmtClock, Store } = Gerbera;
 
   /* ---- 企画とツールの対応（仕様書「企画別表示」） ---- */
   const PLANS = [
@@ -65,7 +65,23 @@
       h('option', { value: '', selected: true, disabled: true }, '🧰 ツールを選ぶ'),
       Array.from(Gerbera.tools.values()).filter(t => t.id !== 'announce').map(t => h('option', { value: t.id }, `${t.icon} ${t.name}`)));
 
+    const notice = Gerbera.TOP_NOTICE;
+    const dismissed = notice && Store.get('notice.dismissed', []).includes(notice.id);
+    const noticeBar = (notice && !dismissed)
+      ? h('div', { class: 'top-notice' },
+          h('span', { class: 'top-notice-icon', 'aria-hidden': 'true' }, '📣'),
+          h('span', { class: 'top-notice-text' }, notice.text),
+          h('button', { class: 'top-notice-x', 'aria-label': 'このお知らせを閉じる',
+            onclick: () => {
+              const list = Store.get('notice.dismissed', []);
+              list.push(notice.id);
+              Store.set('notice.dismissed', list);
+              noticeBar.remove();
+            } }, '×'))
+      : null;
+
     view.replaceChildren(
+      ...(noticeBar ? [noticeBar] : []),
       h('div', { class: 'home-hero' },
         flower,
         h('h1', {}, '今日の配信、なにする？'),

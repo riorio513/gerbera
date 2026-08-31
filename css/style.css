@@ -242,9 +242,16 @@ select.input{
 @keyframes pop{from{transform:scale(.55);opacity:0}to{transform:scale(1);opacity:1}}
 
 /* ---------- ダイス ---------- */
+/* 「面数・個数」欄と「ダイスを振る」ボタンのちょうど中間に、ダイス本体を
+   縦方向で中央配置するための枠（上下マージンを揃え、内部もflexで中央寄せ）。 */
+.dice-stage-wrap{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100px;margin:16px 0;
+}
 .dice-roll-stage{
-  display:flex;flex-wrap:wrap;gap:14px;justify-content:center;
-  min-height:70px;padding:6px 4px;
+  display:flex;flex-wrap:wrap;justify-content:center;align-content:center;
+  column-gap:14px;row-gap:calc(clamp(36px,11vmin,54px) * 0.6);
+  padding:6px 4px;
 }
 .dice-slot{position:relative;width:54px;height:54px;flex-shrink:0;}
 .dice-roll-die{
@@ -281,7 +288,7 @@ select.input{
 .dice-total{text-align:center;font-size:15px;font-weight:900;color:var(--lav-strong);min-height:24px;}
 
 /* ---------- 立体ダイス（d6専用・動的ライティング） ---------- */
-.die3d-slot{position:relative;width:var(--cube,clamp(36px,11vmin,54px));height:calc(var(--cube,clamp(36px,11vmin,54px)) * 1.55);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;}
+.die3d-slot{position:relative;width:var(--cube,clamp(36px,11vmin,54px));height:var(--cube,clamp(36px,11vmin,54px));flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .die3d-stage{
   --cube:clamp(36px,11vmin,54px);
   --h:calc(var(--cube) / 2);
@@ -351,6 +358,52 @@ select.input{
 }
 @media (prefers-reduced-motion: reduce){
   .die3d-wrap.bounce, .die3d-contact.bounce{ animation:none !important; }
+}
+
+/* ---------- 立体ダイス（d4専用・正四面体・動的ライティング） ---------- */
+.die4-slot{position:relative;width:var(--cube,clamp(36px,11vmin,54px));height:var(--cube,clamp(36px,11vmin,54px));flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.die4-stage{
+  --cube:clamp(36px,11vmin,54px);
+  position:relative;width:var(--cube);height:var(--cube);
+  perspective:1400px;
+}
+.die4-wrap{position:absolute;inset:0;transform-style:preserve-3d;}
+.die4-wrap.bounce{animation:die3d-bounce var(--bounce-dur,1350ms) cubic-bezier(.22,.7,.2,1) both;}
+.die4-cube{
+  position:absolute;inset:0;transform-style:preserve-3d;
+}
+.die4-face{
+  position:absolute;inset:0;
+  clip-path:polygon(50% 8%, 86.4% 71%, 13.6% 71%);
+  background:radial-gradient(120% 120% at 30% 24%, #F6C9D6 0%, var(--main) 46%, var(--main-deep) 100%);
+  box-shadow:0 0 34px 5px rgba(217,140,166,.32);
+  display:flex;align-items:center;justify-content:center;
+  --lit:0.7;--spec:0;
+}
+.die4-face::after{
+  content:"";position:absolute;inset:0;clip-path:inherit;
+  background:#2a0410;opacity:calc((1 - var(--lit)) * .92);pointer-events:none;
+}
+.die4-face::before{
+  content:"";position:absolute;inset:0;clip-path:inherit;
+  background:radial-gradient(circle at 40% 40%, #fff 0%, rgba(255,255,255,0) 60%);
+  opacity:var(--spec);pointer-events:none;
+}
+.die4-num{
+  position:relative;margin-top:12%;
+  font-size:calc(var(--cube,54px) * 0.3);font-weight:900;line-height:1;
+  color:#F4EAE0;
+  text-shadow:1px 2px 2px rgba(90,6,14,.55), -1px -1px 1px rgba(255,255,255,.35);
+}
+.die4-contact{
+  position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
+  width:70%;height:16px;border-radius:50%;
+  background:radial-gradient(closest-side, rgba(90,20,40,.35), rgba(90,20,40,0) 75%);
+  filter:blur(7px);z-index:-1;
+}
+.die4-contact.bounce{animation:die3d-contact var(--bounce-dur,1350ms) cubic-bezier(.22,.7,.2,1) both;}
+@media (prefers-reduced-motion: reduce){
+  .die4-wrap.bounce, .die4-contact.bounce{ animation:none !important; }
 }
 
 /* ---------- 抽選箱アニメーション ---------- */

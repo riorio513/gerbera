@@ -1,23 +1,25 @@
 'use strict';
 /* ツール: ダイス（面数変更・個数変更・複数同時・転がるロールアニメーション）
-   6面ダイスのときはリアルな立体キューブ（die3d.js）で転がす。
-   それ以外の面数（2/4/8/10/12/20/100）は立体キューブの構造上表現できないため、
+   4面／6面ダイスのときはリアルな立体（die4.js／die3d.js）で転がす。
+   それ以外の面数（8/10/12/20/100）は立体の構造上表現できないため、
    従来のフラットな回転アニメーション（anim.js の rollDie）にフォールバックする。
    どちらも「演出」だけを担当し、何の目が出るかはこのファイル内の乱数決定が行う。 */
 (function () {
-  const { register, Store, h, openX, shareResultImage, rollDie, AnimTiming, createDie3D } = Gerbera;
+  const { register, Store, h, openX, shareResultImage, rollDie, AnimTiming, createDie3D, createDie4D } = Gerbera;
   const KEY = 'dice';
+  const FACE_OPTIONS = [4, 6, 8, 10, 12, 20, 100];
 
   register({
     id: 'dice', name: 'ダイス', icon: '🎲',
     mount(root) {
       const st = Object.assign({ faces: 6, count: 1 }, Store.get(KEY, {}));
+      if (!FACE_OPTIONS.includes(st.faces)) st.faces = 6;
       const save = () => Store.set(KEY, { faces: st.faces, count: st.count });
 
       /* ---- UI状態: 'idle' | 'rolling' | 'result' ---- */
       let uiState = 'idle';
       let activeFlatRolls = [];  // 進行中の rollDie() コントローラ（多重実行防止・クリーンアップ用）
-      let die3dInstances = [];   // 生成中の createDie3D() インスタンス（同上）
+      let solidInstances = [];   // 生成中の createDie3D/createDie4D インスタンス（同上）
       let lastFinals = null;
 
       /* ---- 結果表示領域（画面上部・ロール中の見た目とは独立） ---- */
@@ -56,7 +58,7 @@
 
       const facesSel = h('select', { class: 'input', style: 'width:110px',
         onchange: e => { st.faces = +e.target.value; save(); buildStage(); } },
-        [2, 4, 6, 8, 10, 12, 20, 100].map(f =>
+        FACE_OPTIONS.map(f =>
           h('option', { value: f, selected: f === st.faces || null }, f + '面')));
 
       const countVal = h('span', { class: 'stepper-val' }, st.count);
@@ -69,12 +71,13 @@
 
       /* ---- ロールアニメーションの舞台（サイコロ本体はここにだけ存在する） ---- */
       const rollStage = h('div', { class: 'dice-roll-stage' });
+      const stageWrap = h('div', { class: 'dice-stage-wrap' }, rollStage);
 
       function clearActiveAnimations() {
         activeFlatRolls.forEach(ctrl => ctrl.cancel());
         activeFlatRolls = [];
-        die3dInstances.forEach(inst => inst.destroy());
-        die3dInstances = [];
+        solidInstances.forEach(inst => inst.destroy());
+        solidInstances = [];
       }
 
       /* 面数・個数が変わったら舞台を作り直す（ロール中は変更UI自体を無効化しているため
@@ -82,11 +85,13 @@
       function buildStage() {
         clearActiveAnimations();
         rollStage.replaceChildren();
-        if (st.faces === 6) {
+        if (st.faces === 6 || st.faces === 4) {
+          const slotClass = st.faces === 6 ? 'die3d-slot' : 'die4-slot';
+          const factory = st.faces === 6 ? createDie3D : createDie4D;
           for (let i = 0; i < st.count; i++) {
-            const slot = h('div', { class: 'die3d-slot' });
+            const slot = h('div', { class: slotClass });
             rollStage.appendChild(slot);
-            die3dInstances.push(createDie3D(slot));
+            solidInstances.push(factory(slot));
           }
         } else {
           const dice = [];
@@ -110,8 +115,8 @@
         const finals = Array.from({ length: st.count }, () => 1 + Math.floor(Math.random() * st.faces));
         let promises;
 
-        if (st.faces === 6) {
-          promises = die3dInstances.map((inst, i) => inst.roll(finals[i]));
+        if (st.faces === 6 || st.faces === 4) {
+          promises = solidInstances.map((inst, i) => inst.roll(finals[i]));
         } else {
           const dieEls = rollStage._flatDice || [];
           activeFlatRolls = [];
@@ -156,8 +161,8 @@
                 h('button', { onclick: () => setCount(-1), 'aria-label': '個数を減らす' }, '−'),
                 countVal,
                 h('button', { onclick: () => setCount(1), 'aria-label': '個数を増やす' }, '＋')))),
-          h('div', { class: 'mt16' }, rollStage),
-          h('div', { class: 'mt12' }, rollBtn))
+          stageWrap,
+          rollBtn)
       );
       buildStage();
 

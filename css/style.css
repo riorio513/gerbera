@@ -242,23 +242,109 @@ select.input{
 @keyframes pop{from{transform:scale(.55);opacity:0}to{transform:scale(1);opacity:1}}
 
 /* ---------- ダイス ---------- */
-.dice-box{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:56px;}
-.die{
-  width:54px;height:54px;border-radius:15px;
+.dice-roll-stage{
+  display:flex;flex-wrap:wrap;gap:14px;justify-content:center;
+  min-height:70px;padding:6px 4px;
+}
+.dice-slot{position:relative;width:54px;height:54px;flex-shrink:0;}
+.dice-roll-die{
+  position:absolute;inset:0;border-radius:15px;
   background:var(--main-faint);border:1.5px solid var(--main-soft);
   display:flex;align-items:center;justify-content:center;
   font-size:21px;font-weight:900;color:var(--main-deep);
   font-variant-numeric:tabular-nums;
+  will-change:transform;
+  transform:translate(0,0) rotate(0deg) scale(1);
+}
+.dice-roll-die .num{opacity:0;transition:opacity .16s ease-out;}
+.dice-roll-die.rolled .num{opacity:1;}
+.dice-roll-die.rolling{
+  background:var(--main-soft);
+  animation:dice-roll-move var(--roll-dur,2000ms) cubic-bezier(.22,.6,.2,1) both;
+}
+.dice-roll-die.settled{animation:dice-settle-wobble 260ms ease-out both;}
+@keyframes dice-roll-move{
+  0%   {transform:translate(0,0) rotate(0deg) scale(1);}
+  6%   {transform:translate(calc(var(--dx,20px) * 0.15), -2px) rotate(calc(var(--turns,5) * 360deg * 0.04)) scale(1.03);}
+  22%  {transform:translate(calc(var(--dx,20px) * 0.85), -16px) rotate(calc(var(--turns,5) * 360deg * 0.28)) scale(1.08);}
+  40%  {transform:translate(calc(var(--dx,20px) * -0.6), -6px) rotate(calc(var(--turns,5) * 360deg * 0.52)) scale(1.02);}
+  58%  {transform:translate(calc(var(--dx,20px) * 0.45), -12px) rotate(calc(var(--turns,5) * 360deg * 0.74)) scale(1.05);}
+  74%  {transform:translate(calc(var(--dx,20px) * -0.2), -3px) rotate(calc(var(--turns,5) * 360deg * 0.9)) scale(1);}
+  88%  {transform:translate(calc(var(--dx,20px) * 0.08), 2px) rotate(calc(var(--turns,5) * 360deg * 0.985)) scale(1);}
+  100% {transform:translate(0,0) rotate(calc(var(--turns,5) * 360deg)) scale(1);}
+}
+@keyframes dice-settle-wobble{
+  0%  {transform:translate(0,0) rotate(0deg) scale(1);}
+  45% {transform:translate(0,-3px) rotate(-3deg) scale(1.05);}
+  100%{transform:translate(0,0) rotate(0deg) scale(1);}
 }
 .dice-total{text-align:center;font-size:15px;font-weight:900;color:var(--lav-strong);min-height:24px;}
-@keyframes diceTumble{
-  0%{transform:rotate(0deg) scale(1);}
-  25%{transform:rotate(160deg) scale(1.14);}
-  50%{transform:rotate(240deg) scale(0.9);}
-  75%{transform:rotate(330deg) scale(1.1);}
-  100%{transform:rotate(400deg) scale(1);}
+
+/* ---------- 抽選箱アニメーション ---------- */
+.box-anim-stage{position:relative;min-height:190px;padding-top:8px;overflow:visible;}
+.box-icon-wrap{
+  position:relative;width:88px;height:88px;margin:0 auto;
+  display:flex;align-items:center;justify-content:center;
 }
-.die.rolling{animation:diceTumble .62s cubic-bezier(.3,.7,.4,1);background:var(--main-soft);}
+.box-slot{
+  position:absolute;top:2px;left:50%;transform:translateX(-50%);
+  width:34px;height:6px;border-radius:3px;background:var(--main-soft);
+}
+.box-icon{font-size:56px;line-height:1;transform-origin:50% 85%;}
+.box-icon-wrap.shaking .box-icon{animation:box-shake var(--shake-dur,1000ms) cubic-bezier(.3,0,.2,1) both;}
+.box-icon-wrap.shake-settle .box-icon{animation:box-shake-settle 160ms ease-out both;}
+.box-icon-wrap.drawn .box-icon{filter:saturate(1.15);}
+@keyframes box-shake{
+  0%  {transform:rotate(0deg) translate(0,0);}
+  4%  {transform:rotate(-7deg) translate(-5px,-1px);}
+  9%  {transform:rotate(8deg) translate(6px,0);}
+  15% {transform:rotate(-9deg) translate(-6px,-2px);}
+  22% {transform:rotate(9deg) translate(6px,0);}
+  30% {transform:rotate(-8deg) translate(-5px,-1px);}
+  39% {transform:rotate(6deg) translate(5px,0);}
+  49% {transform:rotate(-5deg) translate(-4px,-1px);}
+  60% {transform:rotate(4deg) translate(4px,0);}
+  71% {transform:rotate(-3deg) translate(-3px,0);}
+  82% {transform:rotate(2deg) translate(2px,0);}
+  92% {transform:rotate(-.8deg) translate(-1px,0);}
+  100%{transform:rotate(0deg) translate(0,0);}
+}
+@keyframes box-shake-settle{
+  0%  {transform:rotate(0deg) translate(0,0);}
+  50% {transform:rotate(-1.2deg) translate(-1px,0);}
+  100%{transform:rotate(0deg) translate(0,0);}
+}
+.box-ticket{
+  position:absolute;width:32px;height:44px;margin-left:-16px;
+  background:#fff;border:1.5px solid var(--main-soft);border-radius:6px;
+  box-shadow:0 3px 8px rgba(168,88,117,.18);
+  opacity:0;pointer-events:none;
+}
+.box-ticket.eject{animation:box-ticket-eject var(--eject-dur,700ms) cubic-bezier(.24,.7,.3,1) both;}
+@keyframes box-ticket-eject{
+  0%  {opacity:0;transform:translate(0,0) rotate(0deg) scale(.7);}
+  10% {opacity:1;transform:translate(2px,-16px) rotate(-7deg) scale(.85);}
+  35% {opacity:1;transform:translate(-7px,-92px) rotate(10deg) scale(1);}
+  70% {opacity:1;transform:translate(9px,-220px) rotate(-8deg) scale(1);}
+  100%{opacity:0;transform:translate(-4px,-360px) rotate(5deg) scale(.9);}
+}
+.box-result-paper{
+  position:absolute;left:50%;top:-40px;
+  transform:translate(-50%,-10px) scale(.72);
+  min-width:120px;max-width:82%;
+  background:#fff;border:1.5px solid var(--main-soft);border-radius:14px;
+  box-shadow:0 8px 22px rgba(168,88,117,.22);
+  padding:20px 16px;text-align:center;
+  font-size:19px;font-weight:900;color:var(--main-deep);
+  overflow-wrap:anywhere;opacity:0;
+}
+.box-result-paper.appear{animation:box-result-in var(--result-dur,550ms) cubic-bezier(.2,.75,.25,1) both;}
+@keyframes box-result-in{
+  0%  {opacity:0;top:-40px;transform:translate(-50%,-10px) scale(.7);}
+  55% {opacity:1;top:38%;transform:translate(-50%,0) scale(1.06);}
+  80% {top:46%;transform:translate(-50%,0) scale(.98);}
+  100%{opacity:1;top:42%;transform:translate(-50%,0) scale(1);}
+}
 
 /* ---------- カウンター（複数個並べても場所を取らないコンパクト行） ---------- */
 .cnt-row{

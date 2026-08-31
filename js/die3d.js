@@ -128,15 +128,27 @@
         }
 
         return new Promise(resolve => {
-          const timer = setTimeout(() => {
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
+            cube.removeEventListener('transitionend', onEnd);
+            clearTimeout(fallback);
             rx = ((rx % 360) + 360) % 360;
             ry = ((ry % 360) + 360) % 360;
             cube.style.transition = 'none';
             cube.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
             void cube.offsetWidth;
             resolve();
-          }, dur + 20);
-          inst._cancelTimer = timer;
+          };
+          // transitionendを主とし、稀に発火しない環境（タブ非アクティブ化等）に
+          // 備えてタイマーを保険として併用する。どちらが先に来ても必ず同じ
+          // 最終角（TARGET）へ正規化して着地するため、途中で止まることはない。
+          const onEnd = e => { if (e.target === cube && e.propertyName === 'transform') finish(); };
+          cube.addEventListener('transitionend', onEnd);
+          const fallback = setTimeout(finish, dur + 150);
+          inst._cancelTimer = fallback;
+          inst._cancelListener = () => cube.removeEventListener('transitionend', onEnd);
         });
       },
       setStatic(value) {
@@ -148,6 +160,7 @@
       destroy() {
         liveInstances.delete(inst);
         if (inst._cancelTimer) clearTimeout(inst._cancelTimer);
+        if (inst._cancelListener) inst._cancelListener();
         if (ro) ro.disconnect();
         if (stage.parentNode) stage.parentNode.removeChild(stage);
       }

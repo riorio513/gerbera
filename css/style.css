@@ -281,9 +281,9 @@ select.input{
 .dice-total{text-align:center;font-size:15px;font-weight:900;color:var(--lav-strong);min-height:24px;}
 
 /* ---------- 立体ダイス（d6専用・動的ライティング） ---------- */
-.die3d-slot{position:relative;width:var(--cube,clamp(72px,22vmin,108px));height:calc(var(--cube,clamp(72px,22vmin,108px)) + 14px);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;}
+.die3d-slot{position:relative;width:var(--cube,clamp(36px,11vmin,54px));height:calc(var(--cube,clamp(36px,11vmin,54px)) * 1.55);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;}
 .die3d-stage{
-  --cube:clamp(72px,22vmin,108px);
+  --cube:clamp(36px,11vmin,54px);
   --h:calc(var(--cube) / 2);
   --radius:calc(var(--cube) * 0.085);
   position:relative;width:var(--cube);height:var(--cube);

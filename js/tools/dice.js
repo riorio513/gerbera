@@ -1,9 +1,11 @@
 'use strict';
 /* ツール: ダイス（面数変更・個数変更・複数同時・転がるロールアニメーション）
-   演出（rollDie）と抽選ロジック（このファイル内の乱数決定）は分離している。
-   rollDie はダイスの種類・出目を一切知らず、「転がって停止する」動きだけを担当する。 */
+   6面ダイスのときはリアルな立体キューブ（die3d.js）で転がす。
+   それ以外の面数（2/4/8/10/12/20/100）は立体キューブの構造上表現できないため、
+   従来のフラットな回転アニメーション（anim.js の rollDie）にフォールバックする。
+   どちらも「演出」だけを担当し、何の目が出るかはこのファイル内の乱数決定が行う。 */
 (function () {
-  const { register, Store, h, openX, shareResultImage, rollDie, AnimTiming } = Gerbera;
+  const { register, Store, h, openX, shareResultImage, rollDie, AnimTiming, createDie3D } = Gerbera;
   const KEY = 'dice';
 
   register({
@@ -14,7 +16,8 @@
 
       /* ---- UI状態: 'idle' | 'rolling' | 'result' ---- */
       let uiState = 'idle';
-      let activeRolls = [];   // 進行中の rollDie() コントローラ（多重実行防止・クリーンアップ用）
+      let activeFlatRolls = [];  // 進行中の rollDie() コントローラ（多重実行防止・クリーンアップ用）
+      let die3dInstances = [];   // 生成中の createDie3D() インスタンス（同上）
       let lastFinals = null;
 
       /* ---- 結果表示領域（画面上部・ロール中の見た目とは独立） ---- */
@@ -37,7 +40,6 @@
 
       function paintResult() {
         if (uiState !== 'result' || !lastFinals) {
-          resultArea.replaceChildren(); // 空にしてから empty を差し戻す
           resultArea.className = 'empty';
           resultArea.textContent = 'ボタンを押してダイスを振ってね';
           return;
@@ -53,7 +55,7 @@
       }
 
       const facesSel = h('select', { class: 'input', style: 'width:110px',
-        onchange: e => { st.faces = +e.target.value; save(); } },
+        onchange: e => { st.faces = +e.target.value; save(); buildStage(); } },
         [2, 4, 6, 8, 10, 12, 20, 100].map(f =>
           h('option', { value: f, selected: f === st.faces || null }, f + '面')));
 
@@ -62,58 +64,80 @@
         st.count = Math.min(10, Math.max(1, st.count + d));
         countVal.textContent = st.count;
         save();
+        buildStage();
       };
 
       /* ---- ロールアニメーションの舞台（サイコロ本体はここにだけ存在する） ---- */
       const rollStage = h('div', { class: 'dice-roll-stage' });
 
-      function buildSlots(n) {
-        const slots = [];
-        const dice = [];
-        for (let i = 0; i < n; i++) {
-          const die = h('div', { class: 'dice-roll-die' }, h('span', { class: 'num' }, ''));
-          const slot = h('div', { class: 'dice-slot' }, die);
-          slots.push(slot);
-          dice.push(die);
+      function clearActiveAnimations() {
+        activeFlatRolls.forEach(ctrl => ctrl.cancel());
+        activeFlatRolls = [];
+        die3dInstances.forEach(inst => inst.destroy());
+        die3dInstances = [];
+      }
+
+      /* 面数・個数が変わったら舞台を作り直す（ロール中は変更UI自体を無効化しているため
+         多重実行の心配はない） */
+      function buildStage() {
+        clearActiveAnimations();
+        rollStage.replaceChildren();
+        if (st.faces === 6) {
+          for (let i = 0; i < st.count; i++) {
+            const slot = h('div', { class: 'die3d-slot' });
+            rollStage.appendChild(slot);
+            die3dInstances.push(createDie3D(slot));
+          }
+        } else {
+          const dice = [];
+          for (let i = 0; i < st.count; i++) {
+            const die = h('div', { class: 'dice-roll-die' }, h('span', { class: 'num' }, ''));
+            rollStage.appendChild(h('div', { class: 'dice-slot' }, die));
+            dice.push(die);
+          }
+          rollStage._flatDice = dice;
         }
-        rollStage.replaceChildren(...slots);
-        return dice;
       }
 
       function roll() {
         if (uiState === 'rolling') return; // 多重実行防止
         uiState = 'rolling';
         rollBtn.disabled = true;
+        facesSel.disabled = true;
         postBtn.hidden = true;
         postImgBtn.hidden = true;
 
         const finals = Array.from({ length: st.count }, () => 1 + Math.floor(Math.random() * st.faces));
-        const dieEls = buildSlots(st.count);
-        activeRolls = [];
+        let promises;
 
-        const promises = dieEls.map((el, i) => {
-          const width = el.getBoundingClientRect().width || 54;
-          const dx = width * (0.32 + (i % 3) * 0.05);     // 相対サイズから算出（固定値にしない）
-          const turns = 4 + (i % 3) + Math.random() * 1.5; // 個体差をつけて自然に見せる
-          const ctrl = rollDie(el, {
-            dx,
-            turns,
-            duration: AnimTiming.diceRoll,
-            onSettleVisual: () => { el.querySelector('.num').textContent = finals[i]; }
+        if (st.faces === 6) {
+          promises = die3dInstances.map((inst, i) => inst.roll(finals[i]));
+        } else {
+          const dieEls = rollStage._flatDice || [];
+          activeFlatRolls = [];
+          promises = dieEls.map((el, i) => {
+            const width = el.getBoundingClientRect().width || 54;
+            const dx = width * (0.32 + (i % 3) * 0.05);     // 相対サイズから算出（固定値にしない）
+            const turns = 4 + (i % 3) + Math.random() * 1.5; // 個体差をつけて自然に見せる
+            const ctrl = rollDie(el, {
+              dx, turns, duration: AnimTiming.diceRoll,
+              onSettleVisual: () => { el.querySelector('.num').textContent = finals[i]; }
+            });
+            activeFlatRolls.push(ctrl);
+            return ctrl.promise;
           });
-          activeRolls.push(ctrl);
-          return ctrl.promise;
-        });
+        }
 
         Promise.all(promises).then(() => {
           if (uiState !== 'rolling') return; // アンマウント等で取り消し済み
-          activeRolls = [];
+          activeFlatRolls = [];
           lastFinals = finals;
           uiState = 'result';
           paintResult();
           postBtn.hidden = false;
           postImgBtn.hidden = false;
           rollBtn.disabled = false;
+          facesSel.disabled = false;
         });
       }
 
@@ -135,14 +159,11 @@
           h('div', { class: 'mt16' }, rollStage),
           h('div', { class: 'mt12' }, rollBtn))
       );
-      buildSlots(st.count);
+      buildStage();
 
-      /* ---- アンマウント時のクリーンアップ：残っているアニメーション/タイマーが
-             次回の操作に影響しないようにする ---- */
-      return () => {
-        activeRolls.forEach(ctrl => ctrl.cancel());
-        activeRolls = [];
-      };
+      /* ---- アンマウント時のクリーンアップ：残っているアニメーション/タイマー/
+             立体ダイスのrAFループが次回の操作に影響しないようにする ---- */
+      return () => { clearActiveAnimations(); };
     }
   });
 })();

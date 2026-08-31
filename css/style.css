@@ -280,6 +280,79 @@ select.input{
 }
 .dice-total{text-align:center;font-size:15px;font-weight:900;color:var(--lav-strong);min-height:24px;}
 
+/* ---------- 立体ダイス（d6専用・動的ライティング） ---------- */
+.die3d-slot{position:relative;width:var(--cube,clamp(72px,22vmin,108px));height:calc(var(--cube,clamp(72px,22vmin,108px)) + 14px);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;}
+.die3d-stage{
+  --cube:clamp(72px,22vmin,108px);
+  --h:calc(var(--cube) / 2);
+  --radius:calc(var(--cube) * 0.085);
+  position:relative;width:var(--cube);height:var(--cube);
+  perspective:1400px;
+}
+.die3d-wrap{position:absolute;inset:0;transform-style:preserve-3d;}
+.die3d-wrap.bounce{animation:die3d-bounce var(--bounce-dur,1350ms) cubic-bezier(.22,.7,.2,1) both;}
+@keyframes die3d-bounce{
+  0%  {transform:translateY(0);}
+  22% {transform:translateY(calc(-1 * var(--cube) * 0.46));}
+  42% {transform:translateY(calc(-1 * var(--cube) * 0.10));}
+  56% {transform:translateY(calc(-1 * var(--cube) * 0.20));}
+  70% {transform:translateY(0);}
+  80% {transform:translateY(calc(-1 * var(--cube) * 0.05));}
+  90% {transform:translateY(0);}
+  100%{transform:translateY(0);}
+}
+.die3d-cube{
+  position:absolute;inset:0;transform-style:preserve-3d;
+  transform:rotateX(0deg) rotateY(0deg);
+}
+.die3d-face{
+  position:absolute;inset:0;border-radius:var(--radius);
+  background:radial-gradient(120% 120% at 30% 24%, #F6C9D6 0%, var(--main) 46%, var(--main-deep) 100%);
+  box-shadow:
+    inset 7px 7px 16px rgba(255,255,255,.35),
+    inset -10px -12px 22px rgba(90,20,40,.45),
+    0 0 34px 5px rgba(217,140,166,.32);
+  --lit:0.7;--spec:0;
+}
+.die3d-face::after{
+  content:"";position:absolute;inset:0;border-radius:var(--radius);
+  background:#2a0410;opacity:calc((1 - var(--lit)) * .92);pointer-events:none;
+}
+.die3d-face::before{
+  content:"";position:absolute;inset:0;border-radius:var(--radius);
+  background:radial-gradient(circle at 32% 26%, #fff 0%, rgba(255,255,255,0) 60%);
+  opacity:var(--spec);pointer-events:none;
+}
+.die3d-pip{
+  position:absolute;width:17%;height:17%;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 34% 30%, #fff 0%, #F4EAE0 45%, #D8BFA0 100%);
+  box-shadow:inset 2px 3px 4px rgba(90,6,14,.55), inset -1px -1px 3px rgba(255,255,255,.55);
+}
+.f-front { transform:rotateY(0deg) translateZ(var(--h)); }
+.f-back  { transform:rotateY(180deg) translateZ(var(--h)); }
+.f-right { transform:rotateY(90deg) translateZ(var(--h)); }
+.f-left  { transform:rotateY(-90deg) translateZ(var(--h)); }
+.f-top   { transform:rotateX(90deg) translateZ(var(--h)); }
+.f-bottom{ transform:rotateX(-90deg) translateZ(var(--h)); }
+.die3d-contact{
+  position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
+  width:70%;height:16px;border-radius:50%;
+  background:radial-gradient(closest-side, rgba(90,20,40,.35), rgba(90,20,40,0) 75%);
+  filter:blur(7px);z-index:-1;
+}
+.die3d-contact.bounce{animation:die3d-contact var(--bounce-dur,1350ms) cubic-bezier(.22,.7,.2,1) both;}
+@keyframes die3d-contact{
+  0%  {transform:translateX(-50%) scale(1);opacity:.9;}
+  22% {transform:translateX(-50%) scale(.55);opacity:.35;}
+  42% {transform:translateX(-50%) scale(.85);opacity:.6;}
+  70% {transform:translateX(-50%) scale(1);opacity:.9;}
+  100%{transform:translateX(-50%) scale(1);opacity:.9;}
+}
+@media (prefers-reduced-motion: reduce){
+  .die3d-wrap.bounce, .die3d-contact.bounce{ animation:none !important; }
+}
+
 /* ---------- 抽選箱アニメーション ---------- */
 .box-anim-stage{position:relative;min-height:190px;padding-top:8px;overflow:visible;}
 .box-icon-wrap{

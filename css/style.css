@@ -374,12 +374,15 @@ select.input{
 }
 .die4-face{
   position:absolute;inset:0;
-  clip-path:polygon(50% 8%, 86.4% 71%, 13.6% 71%);
   background:radial-gradient(120% 120% at 30% 24%, #F6C9D6 0%, var(--main) 46%, var(--main-deep) 100%);
   box-shadow:0 0 34px 5px rgba(217,140,166,.32);
   display:flex;align-items:center;justify-content:center;
   --lit:0.7;--spec:0;
 }
+/* 正四面体は隣り合う面ごとに三角形の向き（▲/▼）が交互になる。
+   実頂点の位置から数値的に検証した比率（中心から42%の外接半径）。 */
+.die4-face.tri-up{clip-path:polygon(50% 8%, 86.4% 71%, 13.6% 71%);}
+.die4-face.tri-down{clip-path:polygon(50% 92%, 13.6% 29%, 86.4% 29%);}
 .die4-face::after{
   content:"";position:absolute;inset:0;clip-path:inherit;
   background:#2a0410;opacity:calc((1 - var(--lit)) * .92);pointer-events:none;
@@ -390,11 +393,13 @@ select.input{
   opacity:var(--spec);pointer-events:none;
 }
 .die4-num{
-  position:relative;margin-top:12%;
+  position:relative;
   font-size:calc(var(--cube,54px) * 0.3);font-weight:900;line-height:1;
   color:#F4EAE0;
   text-shadow:1px 2px 2px rgba(90,6,14,.55), -1px -1px 1px rgba(255,255,255,.35);
 }
+.die4-face.tri-up .die4-num{margin-top:12%;}
+.die4-face.tri-down .die4-num{margin-top:-12%;}
 .die4-contact{
   position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
   width:70%;height:16px;border-radius:50%;

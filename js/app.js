@@ -48,15 +48,12 @@
     /* ---- 情報パネル：運営からの最新のおしらせ（投稿日時＋内容要約のみ。
            右端の×で消せる＝既読IDをローカルに保存して再表示しない） ---- */
     const latest = (Gerbera.ANNOUNCEMENTS && Gerbera.ANNOUNCEMENTS[0]) || null;
-    const latestLine = latest
-      ? latest.text.split('\n')[0].replace(/^[・･]\s*/, '')
-      : '';
     const latestId = latest ? latest.date + '|' + latest.text.slice(0, 40) : null;
     const noticeDismissed = latestId && Store.get('home.notice.dismissed', []).includes(latestId);
     const noticePanel = (latest && !noticeDismissed)
       ? h('div', { class: 'home-info home-info-notice' },
           h('span', { class: 'home-info-date' }, latest.date),
-          h('span', { class: 'home-info-body' }, latestLine),
+          h('span', { class: 'home-info-body' }, latest.text),
           h('button', { class: 'home-info-x', 'aria-label': 'このお知らせを消す',
             onclick: () => {
               const list = Store.get('home.notice.dismissed', []);

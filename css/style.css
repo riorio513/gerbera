@@ -97,7 +97,7 @@ a{color:var(--main-strong);}
 button.home-info{transition:transform .12s, background .12s;}
 button.home-info:active{transform:scale(.985);}
 .home-info-label{font-size:11.5px;font-weight:700;color:var(--text-sub);letter-spacing:.02em;}
-.home-info-body{font-size:13.5px;font-weight:700;color:var(--text);line-height:1.5;overflow-wrap:anywhere;}
+.home-info-body{font-size:13.5px;font-weight:700;color:var(--text);line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap;}
 .home-info-date{font-size:10px;font-weight:700;color:var(--text-sub);}
 /* 運営からのお知らせカードは、旧・上部お知らせバーと同じ配色にする */
 .home-info-notice{

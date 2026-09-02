@@ -44,6 +44,32 @@ a{color:var(--main-strong);}
 :focus-visible{outline:2px solid var(--lav);outline-offset:2px;}
 [hidden]{display:none !important;}
 
+/* ---------- タイトル画面（起動時スプラッシュ） ---------- */
+.splash{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;background:linear-gradient(165deg,var(--bg) 0%,var(--main-faint) 55%,var(--lav-soft) 100%);
+  opacity:1;visibility:visible;transition:opacity .5s ease, visibility .5s ease;
+}
+.splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
+.splash-tagline{
+  font-size:13.5px;font-weight:700;color:var(--text-sub);letter-spacing:.09em;
+  min-height:1.4em;margin:0;white-space:nowrap;
+}
+.splash-flower{width:38px;height:38px;flex-shrink:0;margin:2px 0;}
+.splash-title{
+  font-size:34px;font-weight:900;color:var(--main-deep);letter-spacing:.1em;
+  min-height:1.3em;margin:0;white-space:nowrap;
+}
+.splash-caret{
+  display:inline-block;width:2px;height:1em;margin-left:3px;
+  background:currentColor;vertical-align:-0.15em;opacity:0;
+}
+.splash-tagline.typing .splash-caret,.splash-title.typing .splash-caret{
+  opacity:1;animation:caretBlink .8s step-end infinite;
+}
+@keyframes caretBlink{0%,100%{opacity:1;}50%{opacity:0;}}
+
 /* ---------- ヘッダー ---------- */
 .app-header{
   position:fixed;top:0;left:0;right:0;height:var(--header-h);z-index:30;

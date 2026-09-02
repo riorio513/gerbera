@@ -10,7 +10,7 @@
   const FACE_OPTIONS = [4, 6, 8, 10, 12, 20, 100];
 
   register({
-    id: 'dice', name: 'ダイス', icon: '🎲',
+    id: 'dice', name: 'サイコロ', icon: '🎲',
     mount(root) {
       const st = Object.assign({ faces: 6, count: 1 }, Store.get(KEY, {}));
       if (!FACE_OPTIONS.includes(st.faces)) st.faces = 6;
@@ -23,16 +23,16 @@
       let lastFinals = null;
 
       /* ---- 結果表示領域（画面上部・ロール中の見た目とは独立） ---- */
-      const resultArea = h('div', { class: 'empty' }, 'ボタンを押してダイスを振ってね');
+      const resultArea = h('div', { class: 'empty' }, 'ボタンを押してサイコロを振ってね');
 
-      function postText() { return `【ダイス】\nダイスの結果は${lastFinals.join('・')}でした！`; }
+      function postText() { return `【サイコロ】\nサイコロの結果は${lastFinals.join('・')}でした！`; }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
         onclick: () => { if (lastFinals) openX(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!lastFinals) return;
           shareResultImage({
-            badge: '【ダイス】',
+            badge: '【サイコロ】',
             main: lastFinals.join('・'),
             note: lastFinals.length > 1 ? '合計 ' + lastFinals.reduce((a, b) => a + b, 0) : '',
             postText: postText()
@@ -43,7 +43,7 @@
       function paintResult() {
         if (uiState !== 'result' || !lastFinals) {
           resultArea.className = 'empty';
-          resultArea.textContent = 'ボタンを押してダイスを振ってね';
+          resultArea.textContent = 'ボタンを押してサイコロを振ってね';
           return;
         }
         resultArea.className = 'result-card pop';
@@ -146,7 +146,7 @@
         });
       }
 
-      const rollBtn = h('button', { class: 'btn btn-primary btn-big btn-full', onclick: roll }, '🎲 ダイスを振る');
+      const rollBtn = h('button', { class: 'btn btn-primary btn-big btn-full', onclick: roll }, '🎲 サイコロを振る');
 
       root.append(
         h('div', { class: 'card' },

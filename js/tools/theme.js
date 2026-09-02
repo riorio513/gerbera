@@ -14,7 +14,7 @@
   }
 
   register({
-    id: 'theme', name: 'トークテーマ', icon: '💬',
+    id: 'theme', name: 'トークテーマガチャ', icon: '💬',
     mount(root) {
       const cats = Object.keys(Gerbera.DATA.talkThemes);
       let cat = cats[0];

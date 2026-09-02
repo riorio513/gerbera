@@ -25,6 +25,27 @@
   /* ---- 共通ツール（画面下部固定） ---- */
   const COMMON = ['calc', 'ptconv', 'timer', 'stopwatch', 'memo', 'note'];
 
+  /* ---- 「ツールをえらぶ」の一覧（この順・この名前で表示）。
+         tool: 登録済みツールのid ／ null: 未実装（一覧に名前だけ出し、選択不可） ---- */
+  const TOOL_MENU = [
+    { label: 'サイコロ',               tool: 'dice' },
+    { label: 'ルーレット',             tool: 'roulette' },
+    { label: 'ガチャ',                 tool: 'gacha' },
+    { label: 'ビンゴ',                 tool: 'bingo' },
+    { label: 'トランプ',               tool: null },
+    { label: 'HIGH＆LOW',              tool: null },
+    { label: '抽選箱',                 tool: 'box' },
+    { label: '投票',                   tool: null },
+    { label: 'タイマー・ストップウォッチ', tool: 'timer', icon: '⏰' },
+    { label: 'カウンター',             tool: 'counter' },
+    { label: '楽曲メモ',               tool: 'song' },
+    { label: 'クイズ',                 tool: null },
+    { label: 'トークテーマガチャ',     tool: 'theme' },
+    { label: '心理テスト',             tool: 'psych' },
+    { label: 'リスナーメモ',           tool: 'memo' },
+    { label: 'メモ',                   tool: 'note' }
+  ];
+
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffQ3-wIxkj7f4A7BEISRkSX90_2Mlj4tSJvbObxFsErTJprg/viewform?usp=publish-editor';
 
   /* AI相談機能のフラグ。導入したら true にすると、「AIと相談する」ボタンの
@@ -94,11 +115,16 @@
       h('span', { class: 'btn btn-primary btn-big btn-full home-cta-face' }, '今日の企画をえらぶ'),
       planSelect);
 
-    /* ---- 「ツールをえらぶ」ボタン（同上・プルダウンを重ねる） ---- */
+    /* ---- 「ツールをえらぶ」ボタン（同上・プルダウンを重ねる。一覧は TOOL_MENU 準拠） ---- */
     const toolSelect = h('select', { class: 'home-sel-native', 'aria-label': 'ツールをえらぶ',
       onchange: e => { if (e.target.value) location.hash = 'tool/' + e.target.value; } },
       h('option', { value: '', selected: true, disabled: true }, 'ツールをえらぶ'),
-      Array.from(Gerbera.tools.values()).filter(t => t.id !== 'announce').map(t => h('option', { value: t.id }, `${t.icon} ${t.name}`)));
+      TOOL_MENU.map(m => {
+        if (!m.tool) return h('option', { value: '', disabled: true }, `${m.label}（準備中）`);
+        const t = getTool(m.tool);
+        const icon = m.icon || (t && t.icon) || '';
+        return h('option', { value: m.tool }, `${icon} ${m.label}`.trim());
+      }));
     const toolBtn = h('div', { class: 'home-sel-wrap' },
       h('span', { class: 'btn btn-ghost btn-full home-sub-face' }, 'ツールをえらぶ'),
       toolSelect);

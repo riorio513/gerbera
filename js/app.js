@@ -6,7 +6,7 @@
    - 共通ツール（画面下部固定ナビ + ボトムシート）
    ============================================================ */
 (function () {
-  const { h, getTool, fmtClock, Store } = Gerbera;
+  const { h, getTool, fmtClock } = Gerbera;
 
   /* ---- 企画とツールの対応（仕様書「企画別表示」） ---- */
   const PLANS = [
@@ -45,23 +45,9 @@
   function renderHome() {
     backBtn.hidden = true;
 
-    /* ---- トップお知らせバー（従来どおり最上部に常時表示） ---- */
-    const notice = Gerbera.TOP_NOTICE;
-    const dismissed = notice && Store.get('notice.dismissed', []).includes(notice.id);
-    const noticeBar = (notice && !dismissed)
-      ? h('div', { class: 'top-notice' },
-          h('span', { class: 'top-notice-icon', 'aria-hidden': 'true' }, '📣'),
-          h('span', { class: 'top-notice-text' }, notice.text),
-          h('button', { class: 'top-notice-x', 'aria-label': 'このお知らせを閉じる',
-            onclick: () => {
-              const list = Store.get('notice.dismissed', []);
-              list.push(notice.id);
-              Store.set('notice.dismissed', list);
-              noticeBar.remove();
-            } }, '×'))
-      : null;
-
-    /* ---- 情報パネル：運営からの最新のおしらせ（実データ。タップで一覧シート） ---- */
+    /* ---- 情報パネル：運営からの最新のおしらせ（実データ。タップで一覧シート）
+           ※以前は「おかえりなさい」上部にお知らせバーを出していたが、
+             このカードに集約したため廃止 ---- */
     const latest = (Gerbera.ANNOUNCEMENTS && Gerbera.ANNOUNCEMENTS[0]) || null;
     const latestLine = latest
       ? latest.text.split('\n')[0].replace(/^[・･]\s*/, '')
@@ -116,7 +102,6 @@
     const btnRow = h('div', { class: 'home-btn-row' }, toolBtn, aiBtn);
 
     view.replaceChildren(
-      ...(noticeBar ? [noticeBar] : []),
       h('h1', { class: 'home-greet' },
         'おかえりなさい、', h('span', { class: 'home-greet-name' }, '〇〇'), 'さん'),
       infoPanel,

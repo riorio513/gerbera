@@ -68,23 +68,6 @@ a{color:var(--main-strong);}
 }
 .header-nav-item:active{background:var(--main-faint);color:var(--main-strong);}
 
-/* ---------- トップお知らせバー ---------- */
-.top-notice{
-  display:flex;align-items:center;gap:8px;
-  background:linear-gradient(90deg,#F7D9C4,#F2C4D6);
-  border:1px solid #EFB9A6;border-radius:14px;
-  padding:11px 12px;margin-bottom:14px;
-  box-shadow:0 2px 8px rgba(200,120,90,.18);
-}
-.top-notice-icon{font-size:16px;flex-shrink:0;}
-.top-notice-text{flex:1;font-size:13.5px;font-weight:700;color:#5C3A2E;line-height:1.5;}
-.top-notice-x{
-  flex-shrink:0;width:26px;height:26px;border-radius:50%;
-  font-size:16px;line-height:1;color:#5C3A2E;
-  display:flex;align-items:center;justify-content:center;
-}
-.top-notice-x:active{background:rgba(255,255,255,.4);}
-
 /* ---------- メイン ---------- */
 #view{
   max-width:640px;margin:0 auto;
@@ -116,8 +99,16 @@ button.home-info:active{transform:scale(.985);}
 .home-info-label{font-size:11.5px;font-weight:700;color:var(--text-sub);letter-spacing:.02em;}
 .home-info-body{font-size:13.5px;font-weight:700;color:var(--text);line-height:1.5;overflow-wrap:anywhere;}
 .home-info-date{font-size:10px;font-weight:700;color:var(--text-sub);}
-.home-info-notice{background:var(--main-faint);border-color:var(--main-soft);}
-.home-info-notice:active{background:var(--main-soft);}
+/* 運営からのお知らせカードは、旧・上部お知らせバーと同じ配色にする */
+.home-info-notice{
+  background:linear-gradient(90deg,#F7D9C4,#F2C4D6);
+  border-color:#EFB9A6;
+  box-shadow:0 2px 8px rgba(200,120,90,.18);
+}
+.home-info-notice .home-info-label,
+.home-info-notice .home-info-body,
+.home-info-notice .home-info-date{color:#5C3A2E;}
+.home-info-notice:active{filter:brightness(.97);}
 .home-info-soon-note{font-size:12px;color:var(--text-sub);}
 .home-info-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .home-info-mini{align-items:center;text-align:center;gap:2px;}

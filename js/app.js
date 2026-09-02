@@ -148,10 +148,8 @@
       infoPanel,
       planBtn,
       btnRow,
-      h('a', { class: 'btn btn-ghost btn-full mt16', href: FEEDBACK_URL, target: '_blank', rel: 'noopener' },
-        '💌 ガーベラの感想・指摘・リクエストなど'),
-      h('p', { class: 'plan-hint', style: 'margin-top:6px' },
-        'このツールは個人で作られたものであり、試運転のため、皆様の指摘や感想、リクエストにより改善されます。')
+      h('p', { class: 'plan-hint', style: 'margin-top:18px' },
+        'ガーベラは個人運営です。改善中のため、皆様の感想や指摘をお待ちしております')
     );
   }
 

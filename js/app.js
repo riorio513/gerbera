@@ -27,6 +27,11 @@
 
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffQ3-wIxkj7f4A7BEISRkSX90_2Mlj4tSJvbObxFsErTJprg/viewform?usp=publish-editor';
 
+  /* AI相談機能のフラグ。導入したら true にすると、「AIと相談する」ボタンの
+     補足文が「※この機能はまだ実装されていません」→
+     「※この機能は月額500円のサブスク入会が必要です」に切り替わる。 */
+  const AI_ENABLED = false;
+
   const view = document.getElementById('view');
   const backBtn = document.getElementById('backBtn');
   const announceBtn = document.getElementById('announceBtn');
@@ -98,11 +103,16 @@
       h('span', { class: 'btn btn-ghost btn-full home-sub-face' }, 'ツールをえらぶ'),
       toolSelect);
 
-    /* ---- 「AIと相談する」ボタン（段階的に実装予定。サブスク前提の文言つき） ---- */
+    /* ---- 「AIと相談する」ボタン（AI_ENABLED で文言・挙動が切り替わる） ---- */
+    const aiNote = AI_ENABLED
+      ? '※この機能は月額500円のサブスク入会が必要です'
+      : '※この機能はまだ実装されていません';
     const aiBtn = h('button', { class: 'btn btn-ghost btn-full home-sub-face home-ai-btn',
-      onclick: () => Gerbera.toast('AIと相談する機能は準備中です（月額500円のサブスク入会が必要になる予定です）') },
+      onclick: () => Gerbera.toast(AI_ENABLED
+        ? 'AIと相談する機能を使うには、月額500円のサブスク入会が必要です'
+        : 'AIと相談する機能はまだ実装されていません') },
       h('span', { class: 'home-ai-title' }, 'AIと相談する'),
-      h('span', { class: 'home-ai-note' }, '※この機能は月額500円のサブスク入会が必要です'));
+      h('span', { class: 'home-ai-note' }, aiNote));
 
     const btnRow = h('div', { class: 'home-btn-row' }, toolBtn, aiBtn);
 

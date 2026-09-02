@@ -202,12 +202,30 @@
     mainCleanup = tool.mount(panel) || null;
   }
 
+  /* ============ お問い合わせ（外部フォームへ移動する前の確認画面） ============ */
+  function renderContactConfirm() {
+    backBtn.hidden = false;
+    view.replaceChildren(
+      h('div', { class: 'card', style: 'text-align:center' },
+        h('h2', { style: 'font-size:17px;color:var(--main-deep);margin-bottom:10px' }, 'お問い合わせ'),
+        h('p', { style: 'font-size:14px;line-height:1.8' }, 'Googleフォームに遷移します'),
+        h('p', { class: 'note', style: 'margin-top:6px' },
+          '別のページ（Googleフォーム）が開きます。ガーベラに入力したデータはこのまま残ります。'),
+        h('a', { class: 'btn btn-primary btn-big btn-full mt16',
+          href: FEEDBACK_URL, target: '_blank', rel: 'noopener',
+          onclick: () => { setTimeout(() => { location.hash = ''; }, 0); } }, '移動する'),
+        h('button', { class: 'btn btn-ghost btn-full mt12',
+          onclick: () => { location.hash = ''; } }, 'もどる'))
+    );
+  }
+
   /* ============ ルーター ============ */
   function route() {
     if (mainCleanup) { try { mainCleanup(); } catch (e) {} mainCleanup = null; }
     const parts = location.hash.replace(/^#\/?/, '').split('/');
     if (parts[0] === 'plan' && parts[1]) renderPlan(parts[1], parts[2] || null);
     else if (parts[0] === 'tool' && parts[1]) renderToolDirect(parts[1]);
+    else if (parts[0] === 'contact') renderContactConfirm();
     else renderHome();
     window.scrollTo(0, 0);
   }
@@ -255,6 +273,10 @@
   sheetBackdrop.addEventListener('click', closeSheet);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
   announceBtn.addEventListener('click', () => openSheet('announce'));
+
+  /* お問い合わせ（Googleフォームへ移動する前に確認画面をはさむ） */
+  const contactBtn = document.getElementById('contactBtn');
+  if (contactBtn) contactBtn.addEventListener('click', () => { location.hash = 'contact'; });
 
   /* 設定・マイページ（レイアウトのみ。中身はログイン制の導入とあわせて実装予定） */
   const settingsBtn = document.getElementById('settingsBtn');

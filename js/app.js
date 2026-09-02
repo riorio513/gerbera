@@ -6,7 +6,7 @@
    - 共通ツール（画面下部固定ナビ + ボトムシート）
    ============================================================ */
 (function () {
-  const { h, getTool, fmtClock } = Gerbera;
+  const { h, getTool, fmtClock, Store } = Gerbera;
 
   /* ---- 企画とツールの対応（仕様書「企画別表示」） ---- */
   const PLANS = [
@@ -45,18 +45,26 @@
   function renderHome() {
     backBtn.hidden = true;
 
-    /* ---- 情報パネル：運営からの最新のおしらせ（実データ。タップで一覧シート）
-           ※以前は「おかえりなさい」上部にお知らせバーを出していたが、
-             このカードに集約したため廃止 ---- */
+    /* ---- 情報パネル：運営からの最新のおしらせ（投稿日時＋内容要約のみ。
+           右端の×で消せる＝既読IDをローカルに保存して再表示しない） ---- */
     const latest = (Gerbera.ANNOUNCEMENTS && Gerbera.ANNOUNCEMENTS[0]) || null;
     const latestLine = latest
       ? latest.text.split('\n')[0].replace(/^[・･]\s*/, '')
-      : 'いまは新しいお知らせはありません';
-    const noticePanel = h('button', { class: 'home-info home-info-notice',
-      onclick: () => { if (Gerbera.openCommonTool) Gerbera.openCommonTool('announce'); } },
-      h('span', { class: 'home-info-label' }, '📣 運営からの最新のおしらせ'),
-      h('span', { class: 'home-info-body' }, latestLine),
-      latest ? h('span', { class: 'home-info-date' }, latest.date + ' ／ タップで一覧') : null);
+      : '';
+    const latestId = latest ? latest.date + '|' + latest.text.slice(0, 40) : null;
+    const noticeDismissed = latestId && Store.get('home.notice.dismissed', []).includes(latestId);
+    const noticePanel = (latest && !noticeDismissed)
+      ? h('div', { class: 'home-info home-info-notice' },
+          h('span', { class: 'home-info-date' }, latest.date),
+          h('span', { class: 'home-info-body' }, latestLine),
+          h('button', { class: 'home-info-x', 'aria-label': 'このお知らせを消す',
+            onclick: () => {
+              const list = Store.get('home.notice.dismissed', []);
+              list.push(latestId);
+              Store.set('home.notice.dismissed', list);
+              noticePanel.remove();
+            } }, '×'))
+      : null;
 
     /* ---- 情報パネル：未実装分（レイアウトのみ・機能は今後） ---- */
     const eventPanel = h('div', { class: 'home-info home-info-soon' },

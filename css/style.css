@@ -101,14 +101,20 @@ button.home-info:active{transform:scale(.985);}
 .home-info-date{font-size:10px;font-weight:700;color:var(--text-sub);}
 /* 運営からのお知らせカードは、旧・上部お知らせバーと同じ配色にする */
 .home-info-notice{
+  position:relative;padding-right:36px;
   background:linear-gradient(90deg,#F7D9C4,#F2C4D6);
   border-color:#EFB9A6;
   box-shadow:0 2px 8px rgba(200,120,90,.18);
 }
-.home-info-notice .home-info-label,
 .home-info-notice .home-info-body,
 .home-info-notice .home-info-date{color:#5C3A2E;}
-.home-info-notice:active{filter:brightness(.97);}
+.home-info-x{
+  position:absolute;right:7px;top:50%;transform:translateY(-50%);
+  width:26px;height:26px;border-radius:50%;
+  font-size:16px;line-height:1;color:#5C3A2E;
+  display:flex;align-items:center;justify-content:center;
+}
+.home-info-x:active{background:rgba(255,255,255,.45);}
 .home-info-soon-note{font-size:12px;color:var(--text-sub);}
 .home-info-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .home-info-mini{align-items:center;text-align:center;gap:2px;}

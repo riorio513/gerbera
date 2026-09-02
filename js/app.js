@@ -230,6 +230,12 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
   announceBtn.addEventListener('click', () => openSheet('announce'));
 
+  /* 設定・マイページ（レイアウトのみ。中身はログイン制の導入とあわせて実装予定） */
+  const settingsBtn = document.getElementById('settingsBtn');
+  const mypageBtn = document.getElementById('mypageBtn');
+  if (settingsBtn) settingsBtn.addEventListener('click', () => Gerbera.toast('設定はまだ準備中です'));
+  if (mypageBtn) mypageBtn.addEventListener('click', () => Gerbera.toast('マイページはログイン制の導入とあわせて準備中です'));
+
   /* 他のツールから共通ツールのシートを開くための窓口（例: pt変換→電卓） */
   Gerbera.openCommonTool = id => openSheet(id);
 

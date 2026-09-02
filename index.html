@@ -14,22 +14,28 @@
 <body>
 
 <header class="app-header">
-  <button id="backBtn" class="header-back" hidden aria-label="トップへ戻る">‹</button>
-  <a class="brand" href="#" aria-label="ガーベラ トップへ">
-    <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g fill="#E8B4C8">
-        <ellipse cx="16" cy="6" rx="4" ry="7"/><ellipse cx="16" cy="26" rx="4" ry="7"/>
-        <ellipse cx="6" cy="16" rx="7" ry="4"/><ellipse cx="26" cy="16" rx="7" ry="4"/>
-        <ellipse cx="9" cy="9" rx="4.5" ry="6" transform="rotate(-45 9 9)"/>
-        <ellipse cx="23" cy="9" rx="4.5" ry="6" transform="rotate(45 23 9)"/>
-        <ellipse cx="9" cy="23" rx="4.5" ry="6" transform="rotate(45 9 23)"/>
-        <ellipse cx="23" cy="23" rx="4.5" ry="6" transform="rotate(-45 23 23)"/>
-      </g>
-      <circle cx="16" cy="16" r="5.5" fill="#C06F8D"/>
-    </svg>
-    <span class="brand-title">ガーベラ</span>
-  </a>
-  <button id="announceBtn" class="header-announce" aria-label="お知らせ・改善履歴を見る">📣<span>お知らせ</span></button>
+  <div class="header-left">
+    <button id="backBtn" class="header-back" hidden aria-label="トップへ戻る">‹</button>
+    <a class="brand" href="#" aria-label="ガーベラ トップへ">
+      <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g fill="#E8B4C8">
+          <ellipse cx="16" cy="6" rx="4" ry="7"/><ellipse cx="16" cy="26" rx="4" ry="7"/>
+          <ellipse cx="6" cy="16" rx="7" ry="4"/><ellipse cx="26" cy="16" rx="7" ry="4"/>
+          <ellipse cx="9" cy="9" rx="4.5" ry="6" transform="rotate(-45 9 9)"/>
+          <ellipse cx="23" cy="9" rx="4.5" ry="6" transform="rotate(45 23 9)"/>
+          <ellipse cx="9" cy="23" rx="4.5" ry="6" transform="rotate(45 9 23)"/>
+          <ellipse cx="23" cy="23" rx="4.5" ry="6" transform="rotate(-45 23 23)"/>
+        </g>
+        <circle cx="16" cy="16" r="5.5" fill="#C06F8D"/>
+      </svg>
+      <span class="brand-title">ガーベラ</span>
+    </a>
+  </div>
+  <nav class="header-nav" aria-label="メニュー">
+    <button id="announceBtn" class="header-nav-item" aria-label="お知らせ・改善履歴を見る">おしらせ</button>
+    <button id="settingsBtn" class="header-nav-item">設定</button>
+    <button id="mypageBtn" class="header-nav-item">マイページ</button>
+  </nav>
 </header>
 
 <main id="view"></main>

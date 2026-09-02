@@ -44,27 +44,8 @@
   /* ============ トップ画面 ============ */
   function renderHome() {
     backBtn.hidden = true;
-    const flower = h('div', { class: 'center' });
-    flower.innerHTML =
-      '<svg class="home-flower" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<g fill="#E8B4C8"><ellipse cx="16" cy="6" rx="4" ry="7"/><ellipse cx="16" cy="26" rx="4" ry="7"/>' +
-      '<ellipse cx="6" cy="16" rx="7" ry="4"/><ellipse cx="26" cy="16" rx="7" ry="4"/>' +
-      '<ellipse cx="9" cy="9" rx="4.5" ry="6" transform="rotate(-45 9 9)"/>' +
-      '<ellipse cx="23" cy="9" rx="4.5" ry="6" transform="rotate(45 23 9)"/>' +
-      '<ellipse cx="9" cy="23" rx="4.5" ry="6" transform="rotate(45 9 23)"/>' +
-      '<ellipse cx="23" cy="23" rx="4.5" ry="6" transform="rotate(-45 23 23)"/></g>' +
-      '<circle cx="16" cy="16" r="5.5" fill="#C06F8D"/></svg>';
 
-    const select = h('select', { class: 'plan-select', 'aria-label': '今日の企画をえらぶ',
-      onchange: e => { if (e.target.value) location.hash = 'plan/' + e.target.value; } },
-      h('option', { value: '', selected: true, disabled: true }, '🌼 今日の企画をえらぶ'),
-      PLANS.map(p => h('option', { value: p.id }, `${p.icon} ${p.name}`)));
-
-    const toolSelect = h('select', { class: 'plan-select', 'aria-label': 'ツールを選ぶ', style: 'margin-top:12px',
-      onchange: e => { if (e.target.value) location.hash = 'tool/' + e.target.value; } },
-      h('option', { value: '', selected: true, disabled: true }, '🧰 ツールを選ぶ'),
-      Array.from(Gerbera.tools.values()).filter(t => t.id !== 'announce').map(t => h('option', { value: t.id }, `${t.icon} ${t.name}`)));
-
+    /* ---- トップお知らせバー（従来どおり最上部に常時表示） ---- */
     const notice = Gerbera.TOP_NOTICE;
     const dismissed = notice && Store.get('notice.dismissed', []).includes(notice.id);
     const noticeBar = (notice && !dismissed)
@@ -80,14 +61,67 @@
             } }, '×'))
       : null;
 
+    /* ---- 情報パネル：運営からの最新のおしらせ（実データ。タップで一覧シート） ---- */
+    const latest = (Gerbera.ANNOUNCEMENTS && Gerbera.ANNOUNCEMENTS[0]) || null;
+    const latestLine = latest
+      ? latest.text.split('\n')[0].replace(/^[・･]\s*/, '')
+      : 'いまは新しいお知らせはありません';
+    const noticePanel = h('button', { class: 'home-info home-info-notice',
+      onclick: () => { if (Gerbera.openCommonTool) Gerbera.openCommonTool('announce'); } },
+      h('span', { class: 'home-info-label' }, '📣 運営からの最新のおしらせ'),
+      h('span', { class: 'home-info-body' }, latestLine),
+      latest ? h('span', { class: 'home-info-date' }, latest.date + ' ／ タップで一覧') : null);
+
+    /* ---- 情報パネル：未実装分（レイアウトのみ・機能は今後） ---- */
+    const eventPanel = h('div', { class: 'home-info home-info-soon' },
+      h('span', { class: 'home-info-label' }, '📅 参加中・参加予定のイベント'),
+      h('span', { class: 'home-info-soon-note' }, 'この機能は準備中です'));
+    const debutPanel = h('div', { class: 'home-info home-info-soon home-info-mini' },
+      h('span', { class: 'home-info-label' }, 'デビューから'),
+      h('span', { class: 'home-info-mini-val' }, '〇日目'));
+    const birthdayPanel = h('div', { class: 'home-info home-info-soon home-info-mini' },
+      h('span', { class: 'home-info-label' }, '今月の誕生日は'),
+      h('span', { class: 'home-info-mini-val' }, '〇〇です'));
+
+    const infoPanel = h('div', { class: 'home-panel' },
+      noticePanel,
+      eventPanel,
+      h('div', { class: 'home-info-row' }, debutPanel, birthdayPanel));
+
+    /* ---- 「今日の企画をえらぶ」大ボタン（当面は従来のプルダウンを重ねる。
+           一覧の出し方は今後あらためて検討） ---- */
+    const planSelect = h('select', { class: 'home-sel-native', 'aria-label': '今日の企画をえらぶ',
+      onchange: e => { if (e.target.value) location.hash = 'plan/' + e.target.value; } },
+      h('option', { value: '', selected: true, disabled: true }, '今日の企画をえらぶ'),
+      PLANS.map(p => h('option', { value: p.id }, `${p.icon} ${p.name}`)));
+    const planBtn = h('div', { class: 'home-cta home-sel-wrap' },
+      h('span', { class: 'btn btn-primary btn-big btn-full home-cta-face' }, '今日の企画をえらぶ'),
+      planSelect);
+
+    /* ---- 「ツールをえらぶ」ボタン（同上・プルダウンを重ねる） ---- */
+    const toolSelect = h('select', { class: 'home-sel-native', 'aria-label': 'ツールをえらぶ',
+      onchange: e => { if (e.target.value) location.hash = 'tool/' + e.target.value; } },
+      h('option', { value: '', selected: true, disabled: true }, 'ツールをえらぶ'),
+      Array.from(Gerbera.tools.values()).filter(t => t.id !== 'announce').map(t => h('option', { value: t.id }, `${t.icon} ${t.name}`)));
+    const toolBtn = h('div', { class: 'home-sel-wrap' },
+      h('span', { class: 'btn btn-ghost btn-full home-sub-face' }, 'ツールをえらぶ'),
+      toolSelect);
+
+    /* ---- 「AIと相談する」ボタン（段階的に実装予定。サブスク前提の文言つき） ---- */
+    const aiBtn = h('button', { class: 'btn btn-ghost btn-full home-sub-face home-ai-btn',
+      onclick: () => Gerbera.toast('AIと相談する機能は準備中です（月額500円のサブスク入会が必要になる予定です）') },
+      h('span', { class: 'home-ai-title' }, 'AIと相談する'),
+      h('span', { class: 'home-ai-note' }, '※この機能は月額500円のサブスク入会が必要です'));
+
+    const btnRow = h('div', { class: 'home-btn-row' }, toolBtn, aiBtn);
+
     view.replaceChildren(
       ...(noticeBar ? [noticeBar] : []),
-      h('div', { class: 'home-hero' },
-        flower,
-        h('h1', {}, '今日の配信、なにする？'),
-        h('p', {}, '企画をえらぶと、ぴったりのツールが表示されます')),
-      h('div', { class: 'plan-select-wrap' }, select, toolSelect),
-      h('p', { class: 'plan-hint' }, 'よく使うツールは、下のバーからいつでも開けます'),
+      h('h1', { class: 'home-greet' },
+        'おかえりなさい、', h('span', { class: 'home-greet-name' }, '〇〇'), 'さん'),
+      infoPanel,
+      planBtn,
+      btnRow,
       h('a', { class: 'btn btn-ghost btn-full mt16', href: FEEDBACK_URL, target: '_blank', rel: 'noopener' },
         '💌 ガーベラの感想・指摘・リクエストなど'),
       h('p', { class: 'plan-hint', style: 'margin-top:6px' },

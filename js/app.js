@@ -67,6 +67,62 @@
   backBtn.setAttribute('aria-label', '企画を変える');
   backBtn.addEventListener('click', () => { location.hash = ''; });
 
+  /* ============ IRIAMの最新イベント情報パネル ============
+     data/iriam-feed.json（毎月末にGitHub Actionsが更新）を1回だけ読み込み、
+     以降はキャッシュから描画する。取得できない・ファイルが無いときは準備中表示。 */
+  const IRIAM_SRC_URL = 'https://info.iriam.com/イベントキャンペーン等お知らせ';
+  let iriamFeed = null;
+  let iriamFeedTried = false;
+
+  function buildIriamPanel() {
+    const body = h('div', { class: 'iriam-body' },
+      h('span', { class: 'home-info-soon-note' }, '読み込み中…'));
+    const panel = h('div', { class: 'home-info home-info-iriam' },
+      h('span', { class: 'home-info-label' }, '📅 IRIAMの最新イベント情報'),
+      body);
+
+    const fill = () => {
+      const evs = (iriamFeed && iriamFeed.events) || [];
+      const news = (iriamFeed && iriamFeed.news) || [];
+      if (!evs.length && !news.length) {
+        body.replaceChildren(h('span', { class: 'home-info-soon-note' },
+          iriamFeedTried ? '最新情報を取得できませんでした' : '準備中です'));
+        return;
+      }
+      const rows = [];
+      evs.slice(0, 5).forEach(ev => {
+        const meta = [
+          ev.eventDateText ? '開催 ' + ev.eventDateText : null,
+          ev.postedDate ? '告知 ' + ev.postedDate : null
+        ].filter(Boolean).join('　');
+        rows.push(h('a', { class: 'iriam-item', href: ev.url, target: '_blank', rel: 'noopener' },
+          h('span', { class: 'iriam-item-title' },
+            ev.category ? h('span', { class: 'iriam-tag' }, ev.category.replace('情報', '')) : null,
+            ev.title),
+          meta ? h('span', { class: 'iriam-item-meta' }, meta) : null));
+      });
+      news.slice(0, 2).forEach(n => {
+        rows.push(h('a', { class: 'iriam-item', href: n.url, target: '_blank', rel: 'noopener' },
+          h('span', { class: 'iriam-item-title' },
+            h('span', { class: 'iriam-tag iriam-tag-news' }, 'ニュース'), n.title),
+          n.date ? h('span', { class: 'iriam-item-meta' }, n.date) : null));
+      });
+      rows.push(h('a', { class: 'iriam-src', href: IRIAM_SRC_URL, target: '_blank', rel: 'noopener' },
+        '出典: IRIAM公式 ↗'));
+      body.replaceChildren(...rows);
+    };
+
+    if (iriamFeed || iriamFeedTried) {
+      fill();
+    } else {
+      fetch('data/iriam-feed.json', { cache: 'no-cache' })
+        .then(r => (r.ok ? r.json() : null))
+        .then(j => { iriamFeed = j; iriamFeedTried = true; fill(); })
+        .catch(() => { iriamFeedTried = true; fill(); });
+    }
+    return panel;
+  }
+
   /* ============ トップ画面 ============ */
   function renderHome() {
     backBtn.hidden = true;
@@ -89,10 +145,9 @@
             } }, '×'))
       : null;
 
-    /* ---- 情報パネル：未実装分（レイアウトのみ・機能は今後） ---- */
-    const eventPanel = h('div', { class: 'home-info home-info-soon' },
-      h('span', { class: 'home-info-label' }, '📅 参加中・参加予定のイベント'),
-      h('span', { class: 'home-info-soon-note' }, 'この機能は準備中です'));
+    /* ---- 情報パネル：IRIAMの最新イベント情報（毎月末に自動更新される
+           data/iriam-feed.json を読み込んで表示。無い／取れないときは準備中表示） ---- */
+    const eventPanel = buildIriamPanel();
     const debutPanel = h('div', { class: 'home-info home-info-soon home-info-mini' },
       h('span', { class: 'home-info-label' }, 'デビューから'),
       h('span', { class: 'home-info-mini-val' }, '〇日目'));

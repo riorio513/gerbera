@@ -1,0 +1,40 @@
+{
+  "source": {
+    "events": "https://info.iriam.com/イベントキャンペーン等お知らせ",
+    "news": "https://iriam.com/news"
+  },
+  "generated": "2026-09-03T11:00:10.049Z",
+  "targetMonth": "2026-10",
+  "note": "本データは IRIAM 公式ページ（info.iriam.com / iriam.com）から自動取得した案内です。日付は告知の投稿日、開催日はタイトルからの推定です。",
+  "events": [
+    {
+      "title": "IRIAM ダジャレの日",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-26",
+      "eventDateText": null,
+      "url": "https://info.iriam.com/3c8afbee5fdb800d8f79e7c3ca9a4dda"
+    },
+    {
+      "title": "#IRIAMいい波 2026 フォトギャラリー",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-19",
+      "eventDateText": null,
+      "url": "https://info.iriam.com/3b3afbee5fdb80b196fddef5a5c9c86d"
+    },
+    {
+      "title": "IRIAM Summer 2026",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-04",
+      "eventDateText": null,
+      "url": "https://info.iriam.com/3b2afbee5fdb808ebfbce3fb8d841ee8"
+    },
+    {
+      "title": "8/11から！IRIAM×家庭科のドラゴン コラボ記念「調理実習コンテスト」開催！",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-03",
+      "eventDateText": "8/11から",
+      "url": "https://info.iriam.com/3b1afbee5fdb80d19c40d7450480927e"
+    }
+  ],
+  "news": []
+}

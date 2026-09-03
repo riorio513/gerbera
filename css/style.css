@@ -120,6 +120,33 @@ button.home-info:active{transform:scale(.985);}
 .home-info-mini{align-items:center;text-align:center;gap:2px;}
 .home-info-mini-val{font-size:15px;font-weight:900;color:var(--main-deep);}
 
+/* IRIAMの最新イベント情報パネル */
+.home-info-iriam{gap:8px;}
+.iriam-body{display:flex;flex-direction:column;gap:7px;}
+.iriam-item{
+  display:flex;flex-direction:column;gap:3px;text-decoration:none;
+  padding:8px 10px;border-radius:10px;background:var(--bg);
+  border:1px solid var(--line);
+}
+.iriam-item:active{background:var(--main-faint);}
+.iriam-item-title{
+  font-size:12.5px;font-weight:700;color:var(--text);line-height:1.45;
+  overflow-wrap:anywhere;
+}
+.iriam-tag{
+  display:inline-block;font-size:9.5px;font-weight:700;line-height:1;
+  color:var(--main-strong);background:var(--main-faint);
+  border-radius:5px;padding:3px 5px;margin-right:5px;vertical-align:1px;
+  white-space:nowrap;
+}
+.iriam-tag-news{color:var(--lav-strong);background:var(--lav-soft);}
+.iriam-item-meta{font-size:10.5px;font-weight:700;color:var(--text-sub);}
+.iriam-src{
+  align-self:flex-end;font-size:10.5px;font-weight:700;
+  color:var(--text-sub);text-decoration:none;padding:2px 0;
+}
+.iriam-src:active{color:var(--main-strong);}
+
 /* 企画／ツール／AI のボタン群 */
 .home-cta{margin-bottom:12px;}
 .home-cta-face{min-height:66px;font-size:17px;line-height:1.35;}

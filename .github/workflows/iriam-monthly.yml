@@ -1,0 +1,72 @@
+name: IRIAM月末情報の取得
+
+# 毎月末（JST）に1回、IRIAM公式のイベント・キャンペーン情報／ニュースを取得して
+# data/iriam-feed.json を更新する。
+#
+# 重要:
+# - scheduled ワークフローは「デフォルトブランチ（= main）」からのみ定期実行される。
+#   そのため dev ブランチにこのファイルがある間は一切動かず、
+#   dev -> main へマージされた時点で自動的に有効化される。
+# - このワークフローが更新するのは data/iriam-feed.json のみ。アプリのコードは触らない。
+
+on:
+  schedule:
+    # 28〜31日 00:40 UTC（= 09:40 JST）に起動し、
+    # 「JSTでその日が月末かどうか」をジョブ側で判定して月末だけ処理する
+    - cron: '40 0 28-31 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: iriam-monthly
+  cancel-in-progress: false
+
+jobs:
+  update-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 月末判定（JST）
+        id: guard
+        run: |
+          node -e '
+            const now = new Date(Date.now() + 9*3600*1000);
+            const tomorrow = new Date(now.getTime() + 24*3600*1000);
+            const isLastDay = now.getUTCMonth() !== tomorrow.getUTCMonth();
+            const manual = process.env.GITHUB_EVENT_NAME === "workflow_dispatch";
+            const run = isLastDay || manual;
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "run=" + run + "\n");
+            console.log({ jst: now.toISOString(), isLastDay, manual, run });
+          '
+
+      - name: チェックアウト
+        if: steps.guard.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Node セットアップ
+        if: steps.guard.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 依存インストール
+        if: steps.guard.outputs.run == 'true'
+        run: npm install --no-save cheerio@^1.0.0
+
+      - name: IRIAM情報を取得
+        if: steps.guard.outputs.run == 'true'
+        run: node scripts/fetch-iriam.mjs
+
+      - name: 差分があればコミット
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          if [ -n "$(git status --porcelain data/iriam-feed.json)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/iriam-feed.json
+            git commit -m "IRIAM月末情報を更新（自動）"
+            git push
+          else
+            echo "変更なし"
+          fi

@@ -250,9 +250,7 @@
             h('p', { class: 'note', style: 'margin:-2px 0 10px' },
               'リスナー名をタップで開閉できます。'),
             filterIn,
-            h('div', { style: 'margin-top:10px' }, listEl),
-            h('p', { class: 'warn', style: 'margin:12px 0 0;line-height:1.6' },
-              '※ ここでのメモはこの端末・ブラウザだけに保存され、消えてしまうことがあります。大事な内容は📋でコピーして、ご自身のメモ帳などに貼り付けておいてください。')));
+            h('div', { style: 'margin-top:10px' }, listEl)));
       }
     }
   });

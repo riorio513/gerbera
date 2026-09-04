@@ -36,9 +36,12 @@
     });
     // 新しい順
     out.sort((a, b) => (a._sort < b._sort ? 1 : a._sort > b._sort ? -1 : 0));
-    // URL 重複除去
+    // 重複除去（同じ告知＝タイトル＋URLが一致するもの）
     const seen = new Set();
-    return out.filter(it => !it.url || (seen.has(it.url) ? false : seen.add(it.url)));
+    return out.filter(it => {
+      const k = (it.title || '') + '|' + (it.url || '');
+      return seen.has(k) ? false : seen.add(k);
+    });
   }
 
   function tagFor(it) {

@@ -10,3 +10,6 @@ desktop.ini
 # Node（IRIAM情報取得スクリプト用。配信対象ではない）
 node_modules/
 npm-debug.log*
+
+.vercel
+.env*

@@ -110,7 +110,7 @@
         }
         function tileFor(n) {
           const noteTa = h('textarea', {
-            class: 'input memo-tile-note', style: 'font-size:12.5px;padding:7px 10px',
+            class: 'input memo-tile-note', style: 'font-size:14px;padding:8px 10px',
             oninput: e => { n.note = e.target.value; save(); autoGrow(noteTa); }
           }, n.note);
           return h('div', { class: 'memo-tile' }, noteTa,
@@ -123,19 +123,42 @@
                   notes = notes.filter(x => x.id !== n.id); save(); render();
                 } }, '🗑')));
         }
+        const openNames = new Set();          // 展開中のリスナー名
+        let filter = '';
+        const filterIn = h('input', {
+          class: 'input', placeholder: '🔍 リスナー名でしぼりこむ',
+          oninput: e => { filter = e.target.value.trim(); render(); }
+        });
         const listEl = h('div');
+
         function render() {
           refreshNameList();
           if (!notes.length) {
             listEl.replaceChildren(h('div', { class: 'empty' }, 'リスナーさんのことをメモしておくと、次の配信でも思い出せます📝'));
             return;
           }
-          listEl.replaceChildren(...groupByName(notes).map(g =>
-            h('div', {},
-              h('div', { class: 'section-label', style: 'margin:14px 2px 8px' },
-                `👤 ${g.name || '名前未設定'}`, h('span', { class: 'badge' }, g.items.length)),
-              h('div', { class: 'memo-grid' }, g.items.map(tileFor)))));
-          requestAnimationFrame(() => listEl.querySelectorAll('.memo-tile-note').forEach(autoGrow));
+          let groups = groupByName(notes);
+          if (filter) groups = groups.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()));
+          // しぼりこみ中・グループが少ないときは自動で開く
+          const autoOpen = !!filter || groups.length <= 2;
+
+          if (!groups.length) {
+            listEl.replaceChildren(h('div', { class: 'empty' }, `「${filter}」に一致するリスナーはいません`));
+            return;
+          }
+          listEl.replaceChildren(...groups.map(g => {
+            const isOpen = autoOpen || openNames.has(g.name);
+            const preview = (g.items[0] && g.items[0].note ? g.items[0].note : '').replace(/\s+/g, ' ').slice(0, 24);
+            const det = h('details', { class: 'lm-group', open: isOpen ? '' : null,
+              ontoggle: e => { if (e.target.open) openNames.add(g.name); else openNames.delete(g.name); } },
+              h('summary', {},
+                h('span', { class: 'lm-name' }, `👤 ${g.name || '名前未設定'}`),
+                h('span', { class: 'badge' }, g.items.length),
+                preview ? h('span', { class: 'lm-preview' }, preview) : null),
+              h('div', { class: 'memo-grid', style: 'padding:6px 2px 4px' }, g.items.map(tileFor)));
+            return det;
+          }));
+          requestAnimationFrame(() => listEl.querySelectorAll('details[open] .memo-tile-note').forEach(autoGrow));
         }
         render();
 
@@ -145,13 +168,17 @@
             h('button', { class: 'btn btn-primary btn-full mt12', onclick: () => {
               if (!nameIn.value.trim() && !noteIn.value.trim()) return;
               notes.unshift({ id: uid(), name: nameIn.value.trim(), note: noteIn.value.trim() });
+              openNames.add(nameIn.value.trim());
               nameIn.value = ''; noteIn.value = ''; save(); render();
             } }, '＋ メモを追加')),
           h('div', { class: 'card' },
             h('div', { class: 'section-label' }, '📝 メモ一覧（リスナーごと）'),
-            h('p', { class: 'warn', style: 'margin:-2px 0 10px;line-height:1.6' },
-              '※ ここでのメモはこの端末・ブラウザだけに保存され、消えてしまうことがあります。大事な内容は📋でコピーして、ご自身のメモ帳などに貼り付けておいてください。'),
-            listEl));
+            h('p', { class: 'note', style: 'margin:-2px 0 10px' },
+              'リスナー名をタップで開閉できます。'),
+            filterIn,
+            h('div', { style: 'margin-top:10px' }, listEl),
+            h('p', { class: 'warn', style: 'margin:12px 0 0;line-height:1.6' },
+              '※ ここでのメモはこの端末・ブラウザだけに保存され、消えてしまうことがあります。大事な内容は📋でコピーして、ご自身のメモ帳などに貼り付けておいてください。')));
       }
     }
   });

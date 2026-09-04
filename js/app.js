@@ -48,13 +48,14 @@
   ];
   Gerbera.TOOL_MENU = TOOL_MENU;
 
-  /* ---- 画面下部ナビ ---- */
+  /* ---- 画面下部ナビ（左端＝ホーム） ---- */
   const NAV = [
-    { label: 'ツール',     icon: '🧰', hash: 'tools',     match: p => p === 'tools' || p === 'tool' },
-    { label: '企画',       icon: '🎬', hash: 'plans',     match: p => p === 'plans' || p === 'plan' },
-    { label: 'AIと相談',   icon: '🤖', hash: 'ai',        match: p => p === 'ai' },
-    { label: '配信管理',   icon: '📊', hash: 'kanri',     match: p => p === 'kanri' || p === 'calendar' || p === 'planday' },
-    { label: 'メモ',       icon: '📝', hash: 'tool/memo', match: (p, full) => full === 'tool/memo' }
+    { label: 'ホーム',   icon: '🏠', hash: '',          match: (p, full) => full === '' },
+    { label: 'ツール',   icon: '🧰', hash: 'tools',     match: (p, full) => (p === 'tools' || p === 'tool') && full !== 'tool/memo' },
+    { label: '企画',     icon: '🎬', hash: 'plans',     match: p => p === 'plans' || p === 'plan' },
+    { label: '配信管理', icon: '📊', hash: 'kanri',     match: p => p === 'kanri' || p === 'calendar' || p === 'planday' },
+    { label: 'メモ',     icon: '📝', hash: 'tool/memo', match: (p, full) => full === 'tool/memo' },
+    { label: 'AI相談',   icon: '🤖', hash: 'ai',        match: p => p === 'ai' }
   ];
 
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffQ3-wIxkj7f4A7BEISRkSX90_2Mlj4tSJvbObxFsErTJprg/viewform?usp=publish-editor';
@@ -65,7 +66,6 @@
 
   const view = document.getElementById('view');
   const backBtn = document.getElementById('backBtn');
-  const announceBtn = document.getElementById('announceBtn');
   const nav = document.getElementById('bottomNav');
   const sheet = document.getElementById('sheet');
   const sheetBody = document.getElementById('sheetBody');
@@ -292,6 +292,24 @@
   }
 
   /* ============ ルーター ============ */
+  function dispatch(p0, parts, full, SC) {
+    if (p0 === '' ) return renderHome();
+    if (p0 === 'tools') return renderToolList();
+    if (p0 === 'tool' && parts[1]) return renderToolDirect(parts[1]);
+    if (p0 === 'plans') return renderPlanList();
+    if (p0 === 'plan' && parts[1]) return renderPlan(parts[1], parts[2] || null);
+    if (p0 === 'ai') return renderAI();
+    if (p0 === 'kanri' && parts[1] === 'iriam') return SC.iriamAll && SC.iriamAll(view);
+    if (p0 === 'kanri') return SC.kanri && SC.kanri(view);
+    if (p0 === 'calendar') return SC.calendar && SC.calendar(view);
+    if (p0 === 'planday') return SC.planday && SC.planday(view);
+    if (p0 === 'settings' && parts[1] === 'terms') return SC.terms && SC.terms(view);
+    if (p0 === 'settings' && parts[1] === 'purchase') return SC.purchase && SC.purchase(view);
+    if (p0 === 'settings' && parts[1] === 'privacy') return SC.privacy && SC.privacy(view);
+    if (p0 === 'settings') return SC.settings && SC.settings(view);
+    if (p0 === 'contact') return renderContactConfirm();
+    return renderHome();
+  }
   function route() {
     if (mainCleanup) { try { mainCleanup(); } catch (e) {} mainCleanup = null; }
     const full = location.hash.replace(/^#\/?/, '');
@@ -301,22 +319,16 @@
 
     backBtn.hidden = (full === '');
 
-    if (p0 === '' ) renderHome();
-    else if (p0 === 'tools') renderToolList();
-    else if (p0 === 'tool' && parts[1]) renderToolDirect(parts[1]);
-    else if (p0 === 'plans') renderPlanList();
-    else if (p0 === 'plan' && parts[1]) renderPlan(parts[1], parts[2] || null);
-    else if (p0 === 'ai') renderAI();
-    else if (p0 === 'kanri' && parts[1] === 'iriam') SC.iriamAll && SC.iriamAll(view);
-    else if (p0 === 'kanri') SC.kanri && SC.kanri(view);
-    else if (p0 === 'calendar') SC.calendar && SC.calendar(view);
-    else if (p0 === 'planday') SC.planday && SC.planday(view);
-    else if (p0 === 'settings' && parts[1] === 'terms') SC.terms && SC.terms(view);
-    else if (p0 === 'settings' && parts[1] === 'purchase') SC.purchase && SC.purchase(view);
-    else if (p0 === 'settings' && parts[1] === 'privacy') SC.privacy && SC.privacy(view);
-    else if (p0 === 'settings') SC.settings && SC.settings(view);
-    else if (p0 === 'contact') renderContactConfirm();
-    else renderHome();
+    try {
+      dispatch(p0, parts, full, SC);
+    } catch (err) {
+      console.error('画面の表示でエラー:', err);
+      view.replaceChildren(
+        h('div', { class: 'card center' },
+          h('h2', { style: 'font-size:16px;color:var(--main-deep);margin-bottom:8px' }, '表示できませんでした'),
+          h('p', { class: 'note' }, 'この画面の読み込み中に問題が発生しました。時間をおいて開き直してください。'),
+          h('button', { class: 'btn btn-primary btn-full mt16', onclick: () => { location.hash = ''; } }, 'ホームに戻る')));
+    }
 
     paintNav(full);
     paintSpeedDial();
@@ -351,16 +363,33 @@
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
   sheetBackdrop.addEventListener('click', closeSheet);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
-  announceBtn.addEventListener('click', () => openSheet('announce'));
   Gerbera.openCommonTool = id => openSheet(id);
 
-  /* ヘッダー右のメニュー */
+  /* ============ ヘッダーのメニュー（☰） ============ */
+  const menuBtn = document.getElementById('menuBtn');
+  const headerMenu = document.getElementById('headerMenu');
+  const menuBackdrop = document.getElementById('menuBackdrop');
+  function openMenu() {
+    headerMenu.hidden = false; menuBackdrop.hidden = false;
+    requestAnimationFrame(() => { headerMenu.classList.add('open'); menuBackdrop.classList.add('open'); });
+    menuBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    headerMenu.classList.remove('open'); menuBackdrop.classList.remove('open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    setTimeout(() => { headerMenu.hidden = true; menuBackdrop.hidden = true; }, 200);
+  }
+  menuBtn.addEventListener('click', () => (headerMenu.hidden ? openMenu() : closeMenu()));
+  menuBackdrop.addEventListener('click', closeMenu);
+
+  const announceBtn = document.getElementById('announceBtn');
   const contactBtn = document.getElementById('contactBtn');
   const settingsBtn = document.getElementById('settingsBtn');
   const mypageBtn = document.getElementById('mypageBtn');
-  if (contactBtn) contactBtn.addEventListener('click', () => { location.hash = 'contact'; });
-  if (settingsBtn) settingsBtn.addEventListener('click', () => { location.hash = 'settings'; });
-  if (mypageBtn) mypageBtn.addEventListener('click', () => toast('マイページはログイン制の導入とあわせて準備中です'));
+  announceBtn.addEventListener('click', () => { closeMenu(); openSheet('announce'); });
+  contactBtn.addEventListener('click', () => { closeMenu(); location.hash = 'contact'; });
+  settingsBtn.addEventListener('click', () => { closeMenu(); location.hash = 'settings'; });
+  mypageBtn.addEventListener('click', () => { closeMenu(); toast('マイページはログイン制の導入とあわせて準備中です'); });
 
   /* ============ 画面下部ナビ ============ */
   function buildNav() {

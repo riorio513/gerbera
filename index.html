@@ -43,13 +43,15 @@
       <span class="brand-title">ガーベラ</span>
     </a>
   </div>
-  <nav class="header-nav" aria-label="メニュー">
-    <button id="announceBtn" class="header-nav-item" aria-label="お知らせ・改善履歴を見る">おしらせ</button>
-    <button id="contactBtn" class="header-nav-item">お問い合わせ</button>
-    <button id="settingsBtn" class="header-nav-item">設定</button>
-    <button id="mypageBtn" class="header-nav-item">マイページ</button>
-  </nav>
+  <button id="menuBtn" class="header-menu-btn" aria-label="メニューを開く" aria-expanded="false">☰</button>
 </header>
+<div id="menuBackdrop" class="header-menu-backdrop" hidden></div>
+<nav id="headerMenu" class="header-menu" aria-label="メニュー" hidden>
+  <button id="announceBtn" class="header-menu-item">📣　おしらせ</button>
+  <button id="contactBtn" class="header-menu-item">✉️　お問い合わせ</button>
+  <button id="settingsBtn" class="header-menu-item">⚙️　設定</button>
+  <button id="mypageBtn" class="header-menu-item">👤　マイページ</button>
+</nav>
 
 <main id="view"></main>
 

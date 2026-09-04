@@ -105,12 +105,13 @@
           nameInput,
           h('div', { class: 'hstack mt8' }, addInput,
             h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
-          h('div', { class: 'mt12' }, stage),
+          h('div', { class: 'mt8' }, stage),
           drawBtn,
           postRow,
-          h('div', { class: 'mt16' }, countNote, poolChips)),
-        h('div', { class: 'card' },
-          h('div', { class: 'section-label' }, '✅ 抽選済み'),
+          h('div', { class: 'mt12' }, countNote, poolChips)),
+        h('details', { class: 'editor', style: 'margin-top:10px' },
+          h('summary', {}, '✅ 抽選済み'),
+          h('div', { class: 'editor-body' },
           drawnList,
           h('button', { class: 'btn btn-danger btn-sm btn-full mt12',
             onclick: () => {
@@ -124,7 +125,7 @@
               postImgBtn.hidden = true;
               paint();
               toast('箱をリセットしました');
-            } }, 'リセット（全部箱に戻す）'))
+            } }, 'リセット（全部箱に戻す）')))
       );
       paint();
 

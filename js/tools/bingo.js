@@ -64,18 +64,20 @@
           numDisplay, restNote, drawBtn),
         h('div', { class: 'card' },
           h('div', { class: 'section-label' }, '🗒 出た数字（ボード）'),
-          board,
-          h('div', { class: 'section-label mt16' }, '🕐 出た順（新しい順）'),
-          histRow,
-          h('button', { class: 'btn btn-danger btn-sm btn-full mt12',
-            onclick: () => {
-              if (!drawn.length) { toast('まだ数字を引いていません'); return; }
-              if (!confirm('履歴を消して最初からにしますか？')) return;
-              drawn = [];
-              save();
-              numDisplay.textContent = '--';
-              paint();
-            } }, 'リセット'))
+          board),
+        h('details', { class: 'editor', style: 'margin-top:10px' },
+          h('summary', {}, '🕐 出た順・リセット'),
+          h('div', { class: 'editor-body' },
+            histRow,
+            h('button', { class: 'btn btn-danger btn-sm btn-full mt12',
+              onclick: () => {
+                if (!drawn.length) { toast('まだ数字を引いていません'); return; }
+                if (!confirm('履歴を消して最初からにしますか？')) return;
+                drawn = [];
+                save();
+                numDisplay.textContent = '--';
+                paint();
+              } }, 'リセット')))
       );
       paint();
     }

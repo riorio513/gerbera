@@ -103,9 +103,11 @@
           h('div', { class: 'card center' },
             display,
             h('div', { class: 'hstack mt12', style: 'justify-content:center' }, startBtn, resetBtn),
-            h('div', { class: 'mt16' }, setRow),
-            postBtn),
-          h('div', { class: 'card' }, h('div', { class: 'section-label' }, '💾 プリセット'), presetRow));
+            h('div', { class: 'mt12' }, setRow),
+            postBtn,
+            h('details', { class: 'editor', style: 'margin-top:10px;text-align:left' },
+              h('summary', {}, '💾 プリセット'),
+              h('div', { class: 'editor-body' }, presetRow))));
         return () => off();
       }
 
@@ -139,8 +141,9 @@
           h('div', { class: 'card center' },
             display,
             h('div', { class: 'hstack mt12', style: 'justify-content:center;flex-wrap:wrap' }, startBtn, lapBtn, resetBtn),
-            postBtn),
-          h('div', { class: 'card' }, h('div', { class: 'section-label' }, '🚩 ラップタイム'), lapList));
+            postBtn,
+            h('div', { class: 'section-label', style: 'margin:12px 2px 4px;text-align:left' }, '🚩 ラップタイム'),
+            h('div', { style: 'max-height:200px;overflow-y:auto' }, lapList)));
         return () => off();
       }
     }

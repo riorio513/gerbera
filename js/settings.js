@@ -76,6 +76,30 @@
         sub ? h('span', { class: 'set-row-sub' }, sub) : null),
       toggle(!!data[key], v => Settings.set({ [key]: v })));
   }
+
+  /* プッシュ通知だけは特別：ONにするとき通知の許可を取り、取れなければ戻す */
+  function notifyRow() {
+    const sw = toggle(!!data.notify, async v => {
+      if (v) {
+        const ok = Gerbera.Push ? await Gerbera.Push.enable() : false;
+        if (!ok) {
+          sw.classList.remove('on');
+          sw.setAttribute('aria-checked', 'false');
+          Settings.set({ notify: false });
+          return;
+        }
+        Settings.set({ notify: true });
+      } else {
+        Settings.set({ notify: false });
+      }
+    });
+    return h('div', { class: 'set-row' },
+      h('div', { class: 'set-row-main' },
+        h('span', { class: 'set-row-title' }, 'プッシュ通知をONにする'),
+        h('span', { class: 'set-row-sub' },
+          'カレンダーで「リマインドする」にした予定を、その日にお知らせします。対応ブラウザ（＋ホーム画面に追加）ではアプリを閉じていても通知が届きます。')),
+      sw);
+  }
   function linkRow(title, hash) {
     return h('button', { class: 'set-row set-row-link', onclick: () => { location.hash = hash; } },
       h('span', { class: 'set-row-title' }, title),
@@ -155,8 +179,7 @@
       h('h1', { class: 'screen-title' }, '設定'),
       h('div', { class: 'set-list' },
         debutRow,
-        toggleRow('プッシュ通知をONにする', 'notify',
-          '登録した予定を、アプリを開いたときにお知らせします（端末のOS通知は出ません）'),
+        notifyRow(),
         toggleRow('ダークモード', 'dark'),
         toggleRow('IRIAM最新情報を表示', 'iriam',
           'オフにすると、配信管理画面のIRIAMイベント情報が表示されなくなります'),

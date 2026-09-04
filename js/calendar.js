@@ -24,18 +24,21 @@
   /* ---------- データ ---------- */
   function all() { return Store.get(KEY, []); }
   function save(list) { Store.set(KEY, list); }
+  function syncPush() { if (Gerbera.Push && Gerbera.Push.sync) Gerbera.Push.sync(); }
   function add(item) {
     const list = all();
     item.id = item.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
     list.push(item);
     save(list);
+    syncPush();
     return item;
   }
   function update(id, patch) {
     const list = all().map(it => (it.id === id ? Object.assign(it, patch) : it));
     save(list);
+    syncPush();
   }
-  function remove(id) { save(all().filter(it => it.id !== id)); }
+  function remove(id) { save(all().filter(it => it.id !== id)); syncPush(); }
 
   function eventCovers(it, dateStr) {
     if (it.type !== 'event') return false;

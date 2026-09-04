@@ -23,30 +23,28 @@
     { id: 'omikujik', name: 'おみくじ企画',   icon: '⛩️', tools: ['omikuji', 'counter', 'timersw'] }
   ];
 
-  /* ---- 「ツールをえらぶ」一覧（この順・この名前で表示）
+  /* ---- 「ツールをえらぶ」一覧 ----
+         並びは「日常的によく使う・汎用性が高い」ものほど上。
          tool: 登録済みツールid ／ null: 未実装（名前だけ・選択不可） ---- */
   const TOOL_MENU = [
     { label: 'サイコロ',                 tool: 'dice' },
     { label: 'ルーレット',               tool: 'roulette' },
     { label: 'カウンター',               tool: 'counter' },
     { label: 'タイマー＆ストップウォッチ', tool: 'timersw' },
-    { label: 'ビンゴ',                   tool: 'bingo' },
+    { label: 'メモ',                     tool: 'memo' },
+    { label: '電卓',                     tool: 'calc' },
+    { label: 'ポイント変換',             tool: 'ptconv' },
+    { label: 'ガチャ',                   tool: 'gacha' },
     { label: '抽選箱',                   tool: 'box' },
+    { label: 'ビンゴ',                   tool: 'bingo' },
+    { label: 'おみくじ',                 tool: 'omikuji' },
     { label: 'トークテーマガチャ',       tool: 'theme' },
     { label: '心理テスト',               tool: 'psych' },
+    { label: '楽曲メモ',                 tool: 'song' },
     { label: '投票',                     tool: null },
     { label: 'クイズ',                   tool: null },
     { label: 'トランプ',                 tool: null },
-    { label: 'HIGH＆LOW',                tool: null },
-    { label: 'メモ',                     tool: 'memo' }
-  ];
-  /* 上の一覧には入れていないが、企画などで使う・従来からある小物ツール */
-  const TOOL_MENU_EXTRA = [
-    { label: 'ガチャ',         tool: 'gacha' },
-    { label: 'おみくじ',       tool: 'omikuji' },
-    { label: '楽曲メモ',       tool: 'song' },
-    { label: '電卓',           tool: 'calc' },
-    { label: 'ポイント変換',   tool: 'ptconv' }
+    { label: 'HIGH＆LOW',                tool: null }
   ];
   Gerbera.TOOL_MENU = TOOL_MENU;
 
@@ -194,9 +192,7 @@
     view.replaceChildren(
       h('h1', { class: 'screen-title' }, 'ツールをえらぶ'),
       h('p', { class: 'note', style: 'margin:-4px 2px 10px' }, '★をつけると、右下のスピードダイヤルからすぐ開けます。'),
-      h('div', { class: 'tool-list' }, TOOL_MENU.map(row)),
-      h('div', { class: 'tool-group-label' }, 'そのほかのツール'),
-      h('div', { class: 'tool-list' }, TOOL_MENU_EXTRA.map(row))
+      h('div', { class: 'tool-list' }, TOOL_MENU.map(row))
     );
   }
 
@@ -435,4 +431,9 @@
   if (Gerbera.Stopwatch) Gerbera.Stopwatch.ev.on(type => { if (type === 'state') paintTimerPill(); });
   paintTimerPill();
   route();
+
+  /* 起動時：通知ONなら当日ぶんのリマインドを同期（通知許可済みならOS通知も出す） */
+  if (Gerbera.Settings && Gerbera.Settings.get().notify && Gerbera.Push) {
+    Gerbera.Push.sync();
+  }
 })();

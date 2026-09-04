@@ -66,6 +66,21 @@
       .map(it => ({ who: it.who || '', day: +it.date.slice(8, 10), id: it.id }))
       .sort((a, b) => a.day - b.day);
   }
+  /* その日の「プラス」記録（IRIAMのデイリーランクスコア＋2/＋4/＋6）。無ければ null */
+  function plusOn(dateStr) {
+    return all().find(it => it.type === 'plus' && it.date === dateStr) || null;
+  }
+  function monthKeyStr(year, month0) { return `${year}-${String(month0 + 1).padStart(2, '0')}`; }
+  function plusStats(year, month0) {
+    const mk = monthKeyStr(year, month0);
+    const rows = all().filter(it => it.type === 'plus' && it.date.slice(0, 7) === mk);
+    const done = rows.filter(it => it.done);
+    return {
+      doneDays: done.length,
+      doneTotal: done.reduce((s, it) => s + (+it.amount || 0), 0),
+      planDays: rows.filter(it => it.plan && !it.done).length
+    };
+  }
   /* アプリを開いたときに出す「今日のリマインド」対象 */
   function todayReminders() {
     const t = todayISO();
@@ -80,13 +95,15 @@
 
   Gerbera.Calendar = {
     all, add, update, remove, itemsOn, todayPlan, birthdaysInMonth, todayReminders,
-    todayISO, EVENT_SPAN_DAYS
+    plusOn, plusStats, todayISO, EVENT_SPAN_DAYS,
+    mount: mountCalendar
   };
 
   /* ---------- 入力小窓（日付タップ） ---------- */
   const TABS = [
     { key: 'event', label: 'イベント', icon: '🎪' },
     { key: 'plan', label: '企画', icon: '🎬' },
+    { key: 'plus', label: 'プラス', icon: '➕' },
     { key: 'birthday', label: '誕生日', icon: '🎂' },
     { key: 'todo', label: 'Todo', icon: '✅' }
   ];
@@ -181,6 +198,26 @@
                   remindToggle(it)),
                 delBtn(it))));
 
+          } else if (activeTab === 'plus') {
+            const rec = plusOn(dateStr);
+            const ensure = () => plusOn(dateStr) || add({ type: 'plus', date: dateStr, plan: false, done: false, amount: 0 });
+            const tidy = () => { const r = plusOn(dateStr); if (r && !r.plan && !r.done) remove(r.id); };
+            const opts = [['取れなかった / まだ', 0, false], ['＋2', 2, true], ['＋4', 4, true], ['＋6', 6, true]];
+            pane.append(
+              h('p', { class: 'note' },
+                'IRIAMのデイリーランクスコア（＋2／＋4／＋6）の記録です。「取る予定の日」と「取れた日」をカレンダーで見返せます。'),
+              h('label', { class: 'cal-tool-check', style: 'padding:8px 0' },
+                h('input', { type: 'checkbox', checked: !!(rec && rec.plan),
+                  onchange: e => { const r = ensure(); update(r.id, { plan: e.target.checked }); tidy(); paintPane(); } }),
+                'この日にプラスを取る予定'),
+              h('p', { class: 'input-label', style: 'margin-top:10px' }, '結果'),
+              h('div', { class: 'seg' },
+                opts.map(([lbl, amt, dn]) =>
+                  h('button', {
+                    class: ((rec && rec.done) ? (rec.amount === amt) : (!dn)) ? 'on' : '',
+                    onclick: () => { const r = ensure(); update(r.id, { done: dn, amount: amt }); tidy(); paintPane(); }
+                  }, lbl))));
+
           } else if (activeTab === 'birthday') {
             const who = h('input', { class: 'input', placeholder: '誰の誕生日？（名前）' });
             pane.append(
@@ -218,7 +255,9 @@
                 delBtn(it))));
           }
 
-          if (!mine.length) pane.append(h('div', { class: 'empty', style: 'margin-top:10px' }, 'この日の登録はまだありません'));
+          if (!mine.length && activeTab !== 'plus') {
+            pane.append(h('div', { class: 'empty', style: 'margin-top:10px' }, 'この日の登録はまだありません'));
+          }
         }
 
         body.append(tabStrip, pane);
@@ -228,17 +267,16 @@
     });
   }
 
-  /* ---------- カレンダー画面 ---------- */
-  function renderCalendar(view) {
+  /* ---------- カレンダー本体（ホーム画面・カレンダー画面で共用） ---------- */
+  function mountCalendar(container, opts) {
+    opts = opts || {};
     let cur = new Date();
     cur.setDate(1);
 
-    const wrap = h('div');
     function paint() {
       const year = cur.getFullYear();
       const month0 = cur.getMonth();
-      const first = new Date(year, month0, 1);
-      const startPad = first.getDay();
+      const startPad = new Date(year, month0, 1).getDay();
       const daysInMonth = new Date(year, month0 + 1, 0).getDate();
       const cells = [];
       for (let i = 0; i < startPad; i++) cells.push(null);
@@ -260,6 +298,7 @@
           const ds = iso(dt);
           const items = itemsOn(ds);
           const hasEvent = items.some(it => it.type === 'event');
+          const plus = plusOn(ds);
           const cls = ['cal-cell'];
           if (ds === todayISO()) cls.push('cal-today');
           if (hasEvent) cls.push('cal-has-event');
@@ -267,38 +306,59 @@
           if (items.some(it => it.type === 'plan')) dots.push(h('i', { class: 'cal-dot dot-plan' }));
           if (items.some(it => it.type === 'birthday')) dots.push(h('i', { class: 'cal-dot dot-bd' }));
           if (items.some(it => it.type === 'todo')) dots.push(h('i', { class: 'cal-dot dot-todo' }));
+          const plusMark = plus && (plus.done || plus.plan)
+            ? h('span', { class: 'cal-plus' + (plus.done ? ' done' : ' plan') },
+                plus.done ? (plus.amount ? '＋' + plus.amount : '＋') : '＋')
+            : null;
           return h('button', { class: cls.join(' '), onclick: () => openDayModal(ds, paint) },
             h('span', { class: 'cal-cell-n' + (dt.getDay() === 0 ? ' sun' : dt.getDay() === 6 ? ' sat' : '') }, dt.getDate()),
             hasEvent ? h('span', { class: 'cal-band' }) : null,
+            plusMark,
             h('span', { class: 'cal-dots' }, dots));
         }));
 
-      /* 今月の予定リスト */
-      const monthItems = all()
-        .filter(it => {
-          if (it.type === 'birthday') return +it.date.slice(5, 7) === month0 + 1;
-          return it.date.slice(0, 7) === `${year}-${String(month0 + 1).padStart(2, '0')}`;
-        })
-        .sort((a, b) => (a.date.slice(5) < b.date.slice(5) ? -1 : 1));
-      const listCard = h('div', { class: 'card' },
-        h('div', { class: 'section-label' }, '🗓 今月の予定'),
-        monthItems.length
-          ? h('div', {}, monthItems.map(it => h('button', { class: 'list-row', style: 'width:100%;text-align:left',
-              onclick: () => openDayModal(it.date, paint) },
-              h('span', { class: 'badge' }, typeLabel(it.type)),
-              h('span', { class: 'row-main' }, itemText(it)),
-              h('span', { class: 'row-sub' }, mmdd(it.date)))))
-          : h('div', { class: 'empty' }, '今月の予定はまだありません。日付をタップして追加できます。'));
+      const ps = plusStats(year, month0);
+      const plusCard = h('div', { class: 'card card-soft', style: 'padding:10px 12px' },
+        h('div', { class: 'section-label', style: 'margin-bottom:4px' }, '➕ 今月のプラス'),
+        h('div', { style: 'font-size:14px;font-weight:700' },
+          `取れた ${ps.doneDays}日（合計 ＋${ps.doneTotal}）`,
+          h('span', { style: 'color:var(--text-sub);font-weight:500' }, `　／　取る予定 ${ps.planDays}日`)));
 
-      wrap.replaceChildren(head, dow, grid,
+      const parts = [head, dow, grid,
         h('div', { class: 'cal-legend' },
           legend('dot-plan', '企画'), legend('dot-bd', '誕生日'), legend('dot-todo', 'Todo'),
-          h('span', { class: 'cal-legend-i' }, h('span', { class: 'cal-legend-band' }), 'イベント')),
-        listCard);
-    }
+          h('span', { class: 'cal-legend-i' }, h('span', { class: 'cal-legend-band' }), 'イベント'),
+          h('span', { class: 'cal-legend-i' }, h('span', { class: 'cal-plus done', style: 'position:static' }, '＋'), 'プラス')),
+        plusCard];
 
-    view.replaceChildren(h('h1', { class: 'screen-title' }, 'カレンダー'), wrap);
+      if (opts.showMonthList) {
+        const monthItems = all()
+          .filter(it => {
+            if (it.type === 'birthday') return +it.date.slice(5, 7) === month0 + 1;
+            if (it.type === 'plus') return false;
+            return it.date.slice(0, 7) === `${year}-${String(month0 + 1).padStart(2, '0')}`;
+          })
+          .sort((a, b) => (a.date.slice(5) < b.date.slice(5) ? -1 : 1));
+        parts.push(h('div', { class: 'card' },
+          h('div', { class: 'section-label' }, '🗓 今月の予定'),
+          monthItems.length
+            ? h('div', {}, monthItems.map(it => h('button', { class: 'list-row', style: 'width:100%;text-align:left',
+                onclick: () => openDayModal(it.date, paint) },
+                h('span', { class: 'badge' }, typeLabel(it.type)),
+                h('span', { class: 'row-main' }, itemText(it)),
+                h('span', { class: 'row-sub' }, mmdd(it.date)))))
+            : h('div', { class: 'empty' }, '今月の予定はまだありません。日付をタップして追加できます。')));
+      }
+
+      container.replaceChildren(...parts);
+    }
     paint();
+    return { refresh: paint };
+  }
+
+  function renderCalendar(view) {
+    view.replaceChildren(h('h1', { class: 'screen-title' }, 'カレンダー'), h('div', { id: 'calBody' }));
+    mountCalendar(document.getElementById('calBody'), { showMonthList: true });
   }
   function legend(dotCls, label) {
     return h('span', { class: 'cal-legend-i' }, h('i', { class: 'cal-dot ' + dotCls }), label);

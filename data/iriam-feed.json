@@ -1,11 +1,12 @@
 {
   "source": {
     "events": "https://info.iriam.com/イベントキャンペーン等お知らせ",
-    "news": "https://iriam.com/news"
+    "news": "https://iriam.com/news",
+    "x": "https://x.com/iriam_event"
   },
   "generated": "2026-09-03T11:00:10.049Z",
   "targetMonth": "2026-10",
-  "note": "本データは IRIAM 公式ページ（info.iriam.com / iriam.com）から自動取得した案内です。日付は告知の投稿日、開催日はタイトルからの推定です。",
+  "note": "本データは IRIAM 公式ページ（info.iriam.com / iriam.com）と公式X（@iriam_event）から自動取得した案内です。日付は告知の投稿日、開催日はタイトルからの推定です。",
   "events": [
     {
       "title": "IRIAM ダジャレの日",
@@ -50,6 +51,22 @@
       "postedDate": "2026-08-20",
       "eventDateText": "10/10〜10/20",
       "url": "https://info.iriam.com/6ddceb3cc87f48feae92c642359c0c9a"
+    }
+  ],
+  "xEvents": [
+    {
+      "title": "【開催決定】秋のガチ恋距離チャレンジ 10/5スタート！エントリー受付は10/1から",
+      "category": "公式X",
+      "postedDate": "2026-08-29",
+      "eventDateText": "10/5",
+      "url": "https://x.com/iriam_event"
+    },
+    {
+      "title": "9/20(土) 20:00〜 コラボ記念スペシャル配信イベントを開催します",
+      "category": "公式X",
+      "postedDate": "2026-08-25",
+      "eventDateText": "9/20",
+      "url": "https://x.com/iriam_event"
     }
   ],
   "news": []

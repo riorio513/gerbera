@@ -157,12 +157,14 @@ button.home-info:active{transform:scale(.985);}
   white-space:nowrap;
 }
 .iriam-tag-news{color:var(--lav-strong);background:var(--lav-soft);}
+.iriam-tag-x{color:#fff;background:#1a1a1a;}
+:root[data-theme="dark"] .iriam-tag-x{background:#000;}
 .iriam-item-meta{font-size:12.5px;font-weight:700;color:var(--text-sub);}
 .iriam-src{
-  align-self:flex-end;font-size:12.5px;font-weight:700;
-  color:var(--text-sub);text-decoration:none;padding:2px 0;
+  align-self:flex-end;font-size:12.5px;font-weight:700;color:var(--text-sub);padding:2px 0;
 }
-.iriam-src:active{color:var(--main-strong);}
+.iriam-src a{color:var(--text-sub);text-decoration:none;}
+.iriam-src a:active{color:var(--main-strong);}
 
 /* 企画／ツール／AI のボタン群 */
 .home-cta{margin-bottom:12px;}
@@ -607,7 +609,34 @@ select.input{
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;
 }
 .lm-group[open] .lm-preview{display:none;}
-.lm-group .memo-grid{padding:0 12px 12px;}
+.lm-group .memo-grid{padding:0;}
+.lm-group-body{padding:2px 12px 12px;}
+.lm-group.lm-danger{border-color:var(--danger);}
+.lm-group.lm-danger > summary{color:var(--danger);}
+.lm-group.lm-danger .lm-name{color:var(--danger);}
+.lm-chips{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;}
+.lm-chip{
+  font-size:11px;font-weight:700;line-height:1;background:var(--bg);
+  border:1px solid var(--line);border-radius:5px;padding:2px 4px;
+}
+.lm-chip.danger{color:var(--danger);border-color:var(--danger);}
+.lm-meta{
+  background:var(--bg);border:1px solid var(--line);border-radius:11px;
+  padding:10px;margin-bottom:8px;
+}
+.lm-meta-row{display:flex;justify-content:space-between;gap:8px;font-size:13px;}
+.lm-meta-k{font-weight:700;color:var(--text-sub);}
+.lm-meta-v{font-weight:700;text-align:right;}
+.lm-stamps{display:flex;flex-wrap:wrap;align-items:center;gap:3px;margin:9px 0;}
+.lm-stamp{width:9px;height:9px;border-radius:50%;background:var(--main);display:inline-block;flex-shrink:0;}
+.lm-stamp-count{font-size:11.5px;font-weight:700;color:var(--text-sub);margin-left:5px;}
+.lm-meta-btns{display:flex;flex-wrap:wrap;gap:6px;}
+.lm-flag-btn{
+  font-size:12px;font-weight:700;color:var(--text-sub);
+  background:var(--bg-soft);border:1.5px solid var(--line);border-radius:999px;padding:6px 10px;
+}
+.lm-flag-btn.on{background:var(--main);border-color:var(--main);color:#fff;}
+.lm-flag-btn.lm-flag-danger.on{background:var(--danger);border-color:var(--danger);}
 
 /* ---------- メモ（グリッド表示・件数が多くても見返しやすい） ---------- */
 .memo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
@@ -1018,6 +1047,15 @@ body.modal-open{overflow:hidden;}
 .cal-today{outline:2px solid var(--main);outline-offset:-2px;}
 .cal-has-event{background:var(--main-faint);}
 .cal-band{position:absolute;left:0;right:0;top:22px;height:4px;background:var(--main-soft);}
+.cal-plus{
+  position:absolute;top:2px;right:2px;font-size:9px;font-weight:900;line-height:1;
+  padding:1px 3px;border-radius:4px;
+}
+.cal-plus.done{background:#E8B15C;color:#5A3A12;}
+.cal-plus.plan{background:transparent;color:var(--text-sub);border:1px dashed var(--text-sub);}
+:root[data-theme="dark"] .cal-plus.done{background:#C9922E;color:#241a0a;}
+.cal-legend-i .cal-plus{padding:1px 4px;}
+.home-cal{margin-top:8px;}
 .cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;position:absolute;bottom:4px;}
 .cal-dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
 .dot-plan{background:var(--main);}
@@ -1026,10 +1064,10 @@ body.modal-open{overflow:hidden;}
 .cal-legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:12px 0 14px;}
 .cal-legend-i{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--text-sub);}
 .cal-legend-band{width:14px;height:5px;border-radius:2px;background:var(--main-soft);display:inline-block;}
-.cal-tabs{display:flex;gap:4px;margin-bottom:12px;}
+.cal-tabs{display:flex;gap:3px;margin-bottom:12px;}
 .cal-tab{
-  flex:1;font-size:13px;font-weight:700;color:var(--text-sub);
-  background:var(--bg-soft);border-radius:999px;padding:8px 2px;white-space:nowrap;
+  flex:1;font-size:11.5px;font-weight:700;color:var(--text-sub);letter-spacing:-.03em;
+  background:var(--bg-soft);border-radius:999px;padding:8px 1px;white-space:nowrap;
 }
 .cal-tab.on{background:var(--main);color:#fff;}
 .cal-pane{display:flex;flex-direction:column;gap:8px;}

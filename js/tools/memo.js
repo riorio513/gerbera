@@ -86,8 +86,34 @@
       /* ---- リスナーメモ ---- */
       function mountListener(box) {
         const KEY = 'listenerMemo';
+        const META = 'listenerMeta';
         let notes = Store.get(KEY, []);
         const save = () => Store.set(KEY, notes);
+
+        /* リスナーごとの付帯情報（来訪スタンプ・危険/ブロック等のフラグ）。名前をキーに保存 */
+        function allMeta() { return Store.get(META, {}); }
+        function getMeta(name) {
+          const m = allMeta()[name] || {};
+          return { blocked: !!m.blocked, muted: !!m.muted, warned: !!m.warned, danger: !!m.danger, visits: m.visits || [] };
+        }
+        function setMeta(name, patch) {
+          const store = allMeta();
+          store[name] = Object.assign(getMeta(name), patch);
+          const m = store[name];
+          if (!m.blocked && !m.muted && !m.warned && !m.danger && (!m.visits || !m.visits.length)) delete store[name];
+          Store.set(META, store);
+        }
+        function stampToday(name) {
+          const t = Gerbera.Calendar ? Gerbera.Calendar.todayISO() : new Date().toISOString().slice(0, 10);
+          const v = getMeta(name).visits.slice();
+          if (v[v.length - 1] === t) { toast('今日はもう記録済みです'); return; }
+          v.push(t);
+          setMeta(name, { visits: v });
+        }
+        function fmtMd(iso) {
+          const d = new Date(iso + 'T00:00:00');
+          return isNaN(d) ? iso : `${d.getMonth() + 1}/${d.getDate()}`;
+        }
 
         const nameListId = 'memoNames-' + uid();
         const nameDatalist = h('datalist', { id: nameListId });
@@ -106,7 +132,50 @@
             if (!map.has(key)) { map.set(key, []); order.push(key); }
             map.get(key).push(n);
           });
-          return order.map(key => ({ name: key, items: map.get(key) }));
+          // メモは無いがフラグ／スタンプが付いているリスナーも表示する
+          Object.keys(allMeta()).forEach(key => {
+            if (!map.has(key)) { map.set(key, []); order.push(key); }
+          });
+          const groups = order.map(key => ({ name: key, items: map.get(key), meta: getMeta(key) }));
+          // 危険リスナーを先頭へ
+          groups.sort((a, b) => (b.meta.danger ? 1 : 0) - (a.meta.danger ? 1 : 0));
+          return groups;
+        }
+
+        const FLAGS = [
+          { key: 'blocked', label: 'ブロック', icon: '🚫' },
+          { key: 'muted', label: 'ミュート', icon: '🔇' },
+          { key: 'warned', label: '注意した', icon: '⚠️' }
+        ];
+        function metaPanel(g) {
+          const m = g.meta;
+          const visits = m.visits || [];
+          const last = visits.length ? visits[visits.length - 1] : null;
+          const stampDots = h('span', { class: 'lm-stamps' },
+            visits.slice(-14).map(() => h('i', { class: 'lm-stamp' })),
+            h('span', { class: 'lm-stamp-count' }, `来訪 ${visits.length}回`));
+          const btns = h('div', { class: 'lm-meta-btns' },
+            h('button', { class: 'btn btn-primary btn-sm', onclick: () => { stampToday(g.name); render(); } }, '＋ 今日来た'),
+            ...FLAGS.map(f => h('button', {
+              class: 'lm-flag-btn' + (m[f.key] ? ' on' : ''),
+              onclick: () => { setMeta(g.name, { [f.key]: !m[f.key] }); render(); }
+            }, f.icon + ' ' + f.label)),
+            h('button', {
+              class: 'lm-flag-btn lm-flag-danger' + (m.danger ? ' on' : ''),
+              onclick: () => { setMeta(g.name, { danger: !m.danger }); render(); }
+            }, '🚨 危険リスナー'));
+          return h('div', { class: 'lm-meta' },
+            h('div', { class: 'lm-meta-row' },
+              h('span', { class: 'lm-meta-k' }, '最後に来た日'),
+              h('span', { class: 'lm-meta-v' }, last ? fmtMd(last) + '（' + last + '）' : '記録なし')),
+            stampDots,
+            btns);
+        }
+        function flagChips(m) {
+          const cs = [];
+          if (m.danger) cs.push(h('span', { class: 'lm-chip danger' }, '🚨危険'));
+          FLAGS.forEach(f => { if (m[f.key]) cs.push(h('span', { class: 'lm-chip' }, f.icon)); });
+          return cs.length ? h('span', { class: 'lm-chips' }, cs) : null;
         }
         function tileFor(n) {
           const noteTa = h('textarea', {
@@ -133,7 +202,7 @@
 
         function render() {
           refreshNameList();
-          if (!notes.length) {
+          if (!notes.length && !Object.keys(allMeta()).length) {
             listEl.replaceChildren(h('div', { class: 'empty' }, 'リスナーさんのことをメモしておくと、次の配信でも思い出せます📝'));
             return;
           }
@@ -147,15 +216,20 @@
             return;
           }
           listEl.replaceChildren(...groups.map(g => {
-            const isOpen = autoOpen || openNames.has(g.name);
-            const preview = (g.items[0] && g.items[0].note ? g.items[0].note : '').replace(/\s+/g, ' ').slice(0, 24);
-            const det = h('details', { class: 'lm-group', open: isOpen ? '' : null,
+            const isOpen = autoOpen || openNames.has(g.name) || g.meta.danger;
+            const preview = (g.items[0] && g.items[0].note ? g.items[0].note : '').replace(/\s+/g, ' ').slice(0, 20);
+            const det = h('details', { class: 'lm-group' + (g.meta.danger ? ' lm-danger' : ''), open: isOpen ? '' : null,
               ontoggle: e => { if (e.target.open) openNames.add(g.name); else openNames.delete(g.name); } },
               h('summary', {},
                 h('span', { class: 'lm-name' }, `👤 ${g.name || '名前未設定'}`),
                 h('span', { class: 'badge' }, g.items.length),
+                flagChips(g.meta),
                 preview ? h('span', { class: 'lm-preview' }, preview) : null),
-              h('div', { class: 'memo-grid', style: 'padding:6px 2px 4px' }, g.items.map(tileFor)));
+              h('div', { class: 'lm-group-body' },
+                metaPanel(g),
+                g.items.length
+                  ? h('div', { class: 'memo-grid', style: 'padding:8px 2px 4px' }, g.items.map(tileFor))
+                  : h('p', { class: 'note', style: 'padding:8px 2px 2px' }, 'このリスナーのメモはまだありません。上のフォームから追加できます。')));
             return det;
           }));
           requestAnimationFrame(() => listEl.querySelectorAll('details[open] .memo-tile-note').forEach(autoGrow));

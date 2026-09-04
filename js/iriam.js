@@ -28,6 +28,7 @@
     const out = [];
     (f.events || []).forEach(ev => out.push(Object.assign({ _t: 'event' }, ev)));
     (f.ranking || []).forEach(ev => out.push(Object.assign({ _t: 'event', kind: 'ranking' }, ev)));
+    (f.xEvents || []).forEach(ev => out.push(Object.assign({ _t: 'x' }, ev)));
     (f.news || []).forEach(n => out.push({ _t: 'news', title: n.title, postedDate: n.date, url: n.url }));
     out.forEach(it => {
       const cat = (it.category || '') + ' ' + (it.title || '');
@@ -46,6 +47,7 @@
 
   function tagFor(it) {
     if (it.kind === 'ranking') return h('span', { class: 'iriam-tag iriam-tag-rank' }, 'ランキング');
+    if (it._t === 'x') return h('span', { class: 'iriam-tag iriam-tag-x' }, '公式X');
     if (it._t === 'news') return h('span', { class: 'iriam-tag iriam-tag-news' }, 'ニュース');
     const c = (it.category || '').replace('情報', '').trim();
     return h('span', { class: 'iriam-tag' }, c || 'イベント');
@@ -62,7 +64,10 @@
       metaFor(it) ? h('span', { class: 'iriam-item-meta' }, metaFor(it)) : null);
   }
   function srcRow() {
-    return h('a', { class: 'iriam-src', href: SRC_URL, target: '_blank', rel: 'noopener' }, '出典: IRIAM公式 ↗');
+    return h('div', { class: 'iriam-src' }, '出典：',
+      h('a', { href: SRC_URL, target: '_blank', rel: 'noopener' }, 'IRIAM公式 ↗'),
+      '　',
+      h('a', { href: 'https://x.com/iriam_event', target: '_blank', rel: 'noopener' }, '@iriam_event ↗'));
   }
 
   /* ---------- 月ごとのまとめ（ぜんぶ見る用） ---------- */

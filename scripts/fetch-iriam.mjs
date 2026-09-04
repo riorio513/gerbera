@@ -153,6 +153,79 @@ async function getNews() {
     .slice(0, 3);
 }
 
+/* ---- X（旧Twitter）@iriam_event の開催予定イベント告知 ----
+   公式APIは有料＆制限が厳しいので、ログイン不要の「埋め込みタイムライン」用
+   syndication エンドポイントからベストエフォートで拾う。
+   X 側の仕様変更で動かなくなる可能性が高い。取れなければ前回分を維持する。 */
+const X_USER = 'iriam_event';
+const X_SYND_URL = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${X_USER}?showReplies=false`;
+const X_RECENT_DAYS = 45;
+const X_MAX = 6;
+
+function xDateText(text) {
+  // 「8/11(月)」「8/11〜8/17」「8月11日」などをタイトルから拾う
+  let m = String(text).match(/(\d{1,2}\/\d{1,2})(?:\([日月火水木金土]\))?\s*[〜~ー-]\s*(\d{1,2}\/\d{1,2})/);
+  if (m) return `${m[1]}〜${m[2]}`;
+  m = String(text).match(/(\d{1,2}月\d{1,2}日)/);
+  if (m) return m[1];
+  m = String(text).match(/(?:^|[^\d])(\d{1,2}\/\d{1,2})(?:[^\d]|$)/);
+  if (m) return m[1];
+  return null;
+}
+
+async function xTweetsFromSyndication() {
+  const html = await fetchText(X_SYND_URL);
+  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!m) throw new Error('X: __NEXT_DATA__ not found');
+  const data = JSON.parse(m[1]);
+  const entries =
+    data?.props?.pageProps?.timeline?.entries ||
+    data?.props?.pageProps?.contextProvider?.timeline?.entries || [];
+  return entries.map(e => e?.content?.tweet).filter(Boolean);
+}
+async function xTweetsFromCdn() {
+  const url = `https://cdn.syndication.twimg.com/timeline/profile?screen_name=${X_USER}&with_replies=false&dnt=true`;
+  const res = await fetch(url, { headers: { 'user-agent': UA, 'accept-language': 'ja' } });
+  if (!res.ok) throw new Error(`X cdn -> HTTP ${res.status}`);
+  const j = await res.json();
+  const map = j?.globalObjects?.tweets || {};
+  return Object.values(map);
+}
+
+async function getXEvents() {
+  let tweets;
+  try { tweets = await xTweetsFromSyndication(); }
+  catch (e1) { tweets = await xTweetsFromCdn(); }
+
+  const out = [];
+  for (const t of tweets) {
+    const full = t.full_text || t.text || '';
+    if (!full) continue;
+    if (t.retweeted_status || t.retweeted_status_id_str) continue; // RTは除外
+    const text = full.replace(/\s+/g, ' ').trim();
+    const created = t.created_at ? new Date(t.created_at) : null;
+    const postedDate = created && !isNaN(created)
+      ? `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}-${String(created.getDate()).padStart(2, '0')}`
+      : null;
+    // イベント告知っぽいものだけ
+    if (!/(イベント|開催|キャンペーン|ランキング|エント[リー]ー|参加|開始|受付)/.test(text)) continue;
+    const title = text.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim().slice(0, 90);
+    out.push({
+      title,
+      category: '公式X',
+      postedDate,
+      eventDateText: xDateText(text),
+      url: `https://x.com/${X_USER}/status/${t.id_str || t.id}`
+    });
+  }
+  const seen = new Set();
+  return out
+    .filter(it => (seen.has(it.url) ? false : seen.add(it.url)))
+    .filter(it => daysAgo(it.postedDate) <= X_RECENT_DAYS)
+    .sort((a, b) => String(b.postedDate || '').localeCompare(String(a.postedDate || '')))
+    .slice(0, X_MAX);
+}
+
 async function readExisting() {
   try {
     return JSON.parse(await readFile(OUT, 'utf8'));
@@ -175,6 +248,7 @@ async function main() {
   let events = [];
   let ranking = [];
   let news = [];
+  let xEvents = [];
   const errors = [];
 
   try {
@@ -192,8 +266,14 @@ async function main() {
     errors.push(`news: ${e.message}`);
     if (prev?.news) news = prev.news;
   }
+  try {
+    xEvents = await getXEvents();
+  } catch (e) {
+    errors.push(`x: ${e.message}`);
+    if (prev?.xEvents) xEvents = prev.xEvents;
+  }
 
-  if (!events.length && !ranking.length && !news.length) {
+  if (!events.length && !ranking.length && !news.length && !xEvents.length) {
     console.error('取得結果が空。既存 JSON を維持して終了。', errors);
     process.exit(0);
   }
@@ -201,20 +281,22 @@ async function main() {
   const payload = {
     source: {
       events: 'https://info.iriam.com/イベントキャンペーン等お知らせ',
-      news: NEWS_URL
+      news: NEWS_URL,
+      x: `https://x.com/${X_USER}`
     },
     generated: new Date().toISOString(),
     targetMonth: nextMonthKey(),
-    note: '本データは IRIAM 公式ページ（info.iriam.com / iriam.com）から自動取得した案内です。日付は告知の投稿日、開催日はタイトルからの推定です。',
+    note: '本データは IRIAM 公式ページ（info.iriam.com / iriam.com）と公式X（@iriam_event）から自動取得した案内です。日付は告知の投稿日、開催日はタイトルからの推定です。',
     events,
     ranking,
+    xEvents,
     news
   };
   if (errors.length) payload.partialErrors = errors;
 
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-  console.log(`書き出し: ${OUT}  events=${events.length} ranking=${ranking.length} news=${news.length}${errors.length ? '  (partial: ' + errors.join('; ') + ')' : ''}`);
+  console.log(`書き出し: ${OUT}  events=${events.length} ranking=${ranking.length} x=${xEvents.length} news=${news.length}${errors.length ? '  (partial: ' + errors.join('; ') + ')' : ''}`);
 }
 
 main().catch(e => {

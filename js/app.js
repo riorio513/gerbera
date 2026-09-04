@@ -115,21 +115,6 @@
       }
     }
 
-    /* デビュー日数・今月誕生日 */
-    const days = Gerbera.Settings ? Gerbera.Settings.debutDays() : null;
-    const now = new Date();
-    const bds = Cal ? Cal.birthdaysInMonth(now.getFullYear(), now.getMonth()) : [];
-    const dashRow = h('div', { class: 'dash-row' },
-      h('button', { class: 'dash-cell', onclick: () => { location.hash = 'settings'; } },
-        h('span', { class: 'dash-cell-label' }, 'デビューから今日で'),
-        h('span', { class: 'dash-cell-val' }, days != null ? days + '日' : '—'),
-        days == null ? h('span', { class: 'dash-cell-note' }, 'タップして設定') : null),
-      h('button', { class: 'dash-cell', onclick: () => { location.hash = 'calendar'; } },
-        h('span', { class: 'dash-cell-label' }, '今月誕生日の人'),
-        bds.length
-          ? h('span', { class: 'dash-cell-val sm' }, bds.map(b => `${b.who}（${b.day}日）`).join('・'))
-          : h('span', { class: 'dash-cell-val' }, '誰もいません')));
-
     /* 今日の企画 */
     const plan = Cal ? Cal.todayPlan() : null;
     const planCard = h('button', { class: 'dash-plan', onclick: () => { location.hash = 'planday'; } },
@@ -139,12 +124,16 @@
             (plan.tools && plan.tools.length) ? h('span', { class: 'dash-plan-tools' }, '　予約ツール ' + plan.tools.length + '件 ›') : h('span', { class: 'dash-plan-tools' }, ' ›'))
         : h('span', { class: 'dash-plan-none' }, '今日は企画配信の予定はありません'));
 
+    /* カレンダー（配信管理で登録した予定・プラス記録がそのまま反映される） */
+    const calBox = h('div', { class: 'home-cal' });
+
     view.replaceChildren(
       h('h1', { class: 'home-greet' },
         'おかえりなさい、', h('span', { class: 'home-greet-name' }, '〇〇'), 'さん'),
-      h('div', { class: 'home-panel' },
-        noticePanel, remindCard, dashRow, planCard)
+      h('div', { class: 'home-panel' }, noticePanel, remindCard, planCard),
+      calBox
     );
+    if (Cal && Cal.mount) Cal.mount(calBox, { showMonthList: false });
 
     /* 初回表示時に一度だけリマインドのトースト */
     if (!remindShown && S.notify && Cal) {

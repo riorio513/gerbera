@@ -128,7 +128,7 @@
         h('span', { class: 'dash-cell-label' }, '今月誕生日の人'),
         bds.length
           ? h('span', { class: 'dash-cell-val sm' }, bds.map(b => `${b.who}（${b.day}日）`).join('・'))
-          : h('span', { class: 'dash-cell-val' }, 'なし')));
+          : h('span', { class: 'dash-cell-val' }, '誰もいません')));
 
     /* 今日の企画 */
     const plan = Cal ? Cal.todayPlan() : null;

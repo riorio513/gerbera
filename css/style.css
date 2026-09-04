@@ -719,9 +719,14 @@ details.editor[open] summary::before{transform:rotate(90deg);}
 }
 .sheet.open{transform:translateY(0);}
 .sheet-grabber{width:42px;height:4.5px;border-radius:4px;background:var(--line);margin:10px auto 2px;flex-shrink:0;}
-.sheet-head{display:flex;align-items:center;gap:8px;padding:8px 18px 6px;flex-shrink:0;}
+.sheet-head{display:flex;align-items:center;gap:8px;padding:8px 16px 6px;flex-shrink:0;}
+.sheet-back{
+  flex-shrink:0;width:30px;height:32px;border-radius:9px;font-size:24px;font-weight:700;line-height:1;
+  color:var(--main-strong);display:flex;align-items:center;justify-content:center;
+}
+.sheet-back:active{background:var(--main-faint);}
 .sheet-icon{font-size:19px;}
-.sheet-title{font-size:15.5px;font-weight:900;flex:1;}
+.sheet-title{font-size:15.5px;font-weight:900;flex:1;min-width:0;}
 .sheet-close{
   width:36px;height:36px;border-radius:50%;font-size:20px;color:var(--text-sub);
   background:var(--bg-soft);display:flex;align-items:center;justify-content:center;

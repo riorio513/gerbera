@@ -48,10 +48,10 @@
   ];
   Gerbera.TOOL_MENU = TOOL_MENU;
 
-  /* ---- 画面下部ナビ（左端＝ホーム） ---- */
+  /* ---- 画面下部ナビ（左端＝ホーム）。「ツール」は画面遷移せず小窓で開く ---- */
   const NAV = [
     { label: 'ホーム',   icon: '🏠', hash: '',          match: (p, full) => full === '' },
-    { label: 'ツール',   icon: '🧰', hash: 'tools',     match: (p, full) => (p === 'tools' || p === 'tool') && full !== 'tool/memo' },
+    { label: 'ツール',   icon: '🧰', sheet: true,        match: () => sheetMode === 'list' || sheetMode === 'listTool' },
     { label: '企画',     icon: '🎬', hash: 'plans',     match: p => p === 'plans' || p === 'plan' },
     { label: '配信管理', icon: '📊', hash: 'kanri',     match: p => p === 'kanri' || p === 'calendar' || p === 'planday' },
     { label: 'メモ',     icon: '📝', hash: 'tool/memo', match: (p, full) => full === 'tool/memo' },
@@ -162,37 +162,40 @@
   }
 
   /* ============ ツールをえらぶ ============ */
-  function renderToolList() {
-    const favs = Store.get('favorites', []);
-    function row(m) {
-      if (!m.tool) {
-        return h('div', { class: 'tool-row tool-row-disabled' },
-          h('span', { class: 'tool-row-name' }, m.label),
-          h('span', { class: 'tool-row-soon' }, '準備中'));
-      }
-      const t = getTool(m.tool);
-      const isFav = favs.includes(m.tool);
-      const star = h('button', { class: 'tool-star' + (isFav ? ' on' : ''),
-        'aria-label': isFav ? 'お気に入りから外す' : 'お気に入りに追加',
-        onclick: e => {
-          e.stopPropagation();
-          const list = Store.get('favorites', []);
-          const i = list.indexOf(m.tool);
-          if (i >= 0) list.splice(i, 1); else list.push(m.tool);
-          Store.set('favorites', list);
-          star.classList.toggle('on');
-          star.setAttribute('aria-label', star.classList.contains('on') ? 'お気に入りから外す' : 'お気に入りに追加');
-          paintSpeedDial();
-        } }, '★');
-      return h('button', { class: 'tool-row', onclick: () => { location.hash = 'tool/' + m.tool; } },
-        h('span', { class: 'tool-row-ico' }, (t && t.icon) || '🔧'),
+  /* onPick(id) … ツールを選んだときの動作（画面遷移 or 小窓表示） */
+  function toolRow(m, onPick) {
+    if (!m.tool) {
+      return h('div', { class: 'tool-row tool-row-disabled' },
         h('span', { class: 'tool-row-name' }, m.label),
-        star);
+        h('span', { class: 'tool-row-soon' }, '準備中'));
     }
+    const t = getTool(m.tool);
+    const isFav = Store.get('favorites', []).includes(m.tool);
+    const star = h('button', { class: 'tool-star' + (isFav ? ' on' : ''),
+      'aria-label': isFav ? 'お気に入りから外す' : 'お気に入りに追加',
+      onclick: e => {
+        e.stopPropagation();
+        const list = Store.get('favorites', []);
+        const i = list.indexOf(m.tool);
+        if (i >= 0) list.splice(i, 1); else list.push(m.tool);
+        Store.set('favorites', list);
+        star.classList.toggle('on');
+        star.setAttribute('aria-label', star.classList.contains('on') ? 'お気に入りから外す' : 'お気に入りに追加');
+        paintSpeedDial();
+      } }, '★');
+    return h('button', { class: 'tool-row', onclick: () => onPick(m.tool) },
+      h('span', { class: 'tool-row-ico' }, (t && t.icon) || '🔧'),
+      h('span', { class: 'tool-row-name' }, m.label),
+      star);
+  }
+  function toolListEl(onPick) {
+    return h('div', { class: 'tool-list' }, TOOL_MENU.map(m => toolRow(m, onPick)));
+  }
+  function renderToolList() {
     view.replaceChildren(
       h('h1', { class: 'screen-title' }, 'ツールをえらぶ'),
       h('p', { class: 'note', style: 'margin:-4px 2px 10px' }, '★をつけると、右下のスピードダイヤルからすぐ開けます。'),
-      h('div', { class: 'tool-list' }, TOOL_MENU.map(row))
+      toolListEl(id => { location.hash = 'tool/' + id; })
     );
   }
 
@@ -336,33 +339,85 @@
   }
   window.addEventListener('hashchange', route);
 
-  /* ============ ボトムシート（他ツールからの呼び出し・お知らせ） ============ */
-  let sheetTool = null, sheetCleanup = null;
-  function openSheet(id) {
-    const t = getTool(id);
-    if (!t) return;
+  /* ============ ボトムシート（ツール小窓・他ツールからの呼び出し・お知らせ） ============ */
+  let sheetCleanup = null;
+  let sheetMode = null; // null | 'tool' | 'list' | 'listTool'
+  const sheetBack = document.getElementById('sheetBack');
+  const sheetIcon = document.getElementById('sheetIcon');
+  const sheetTitle = document.getElementById('sheetTitle');
+
+  function clearSheetTool() {
     if (sheetCleanup) { try { sheetCleanup(); } catch (e) {} sheetCleanup = null; }
-    sheetTool = id;
-    document.getElementById('sheetIcon').textContent = t.icon;
-    document.getElementById('sheetTitle').textContent = t.name;
-    sheetBody.replaceChildren();
-    sheetCleanup = t.mount(sheetBody) || null;
+  }
+  function showSheet() {
     sheet.hidden = false; sheetBackdrop.hidden = false;
     requestAnimationFrame(() => { sheet.classList.add('open'); sheetBackdrop.classList.add('open'); });
   }
+
+  /* 単体ツールを小窓で開く（スピードダイヤル・他ツールからの呼び出し） */
+  function openSheet(id) {
+    const t = getTool(id);
+    if (!t) return;
+    clearSheetTool();
+    sheetMode = 'tool';
+    sheetBack.hidden = true;
+    sheetIcon.textContent = t.icon;
+    sheetTitle.textContent = t.name;
+    sheetBody.replaceChildren();
+    sheetBody.scrollTop = 0;
+    sheetCleanup = t.mount(sheetBody) || null;
+    showSheet();
+    paintNav(currentFull());
+  }
+
+  /* ツール一覧を小窓で表示（ボトムナビの「ツール」） */
+  function openToolSheet() {
+    clearSheetTool();
+    sheetMode = 'list';
+    sheetBack.hidden = true;
+    sheetIcon.textContent = '🧰';
+    sheetTitle.textContent = 'ツールをえらぶ';
+    sheetBody.replaceChildren(
+      h('p', { class: 'note', style: 'margin:0 0 8px' }, '選ぶと、今の画面のまま小窓で開けます。★でお気に入り登録。'),
+      toolListEl(id => openToolFromList(id)));
+    sheetBody.scrollTop = 0;
+    showSheet();
+    paintNav(currentFull());
+  }
+  function openToolFromList(id) {
+    const t = getTool(id);
+    if (!t) return;
+    clearSheetTool();
+    sheetMode = 'listTool';
+    sheetBack.hidden = false;
+    sheetIcon.textContent = t.icon;
+    sheetTitle.textContent = t.name;
+    sheetBody.replaceChildren();
+    sheetBody.scrollTop = 0;
+    sheetCleanup = t.mount(sheetBody) || null;
+  }
+
   function closeSheet() {
-    if (sheetTool === null) return;
-    if (sheetCleanup) { try { sheetCleanup(); } catch (e) {} sheetCleanup = null; }
-    sheetTool = null;
+    if (sheet.hidden) return;
+    clearSheetTool();
+    sheetMode = null;
     sheet.classList.remove('open'); sheetBackdrop.classList.remove('open');
     setTimeout(() => {
-      if (sheetTool === null) { sheet.hidden = true; sheetBackdrop.hidden = true; sheetBody.replaceChildren(); }
+      if (!sheet.classList.contains('open')) {
+        sheet.hidden = true; sheetBackdrop.hidden = true; sheetBody.replaceChildren();
+      }
     }, 320);
     route();
   }
+
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
   sheetBackdrop.addEventListener('click', closeSheet);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  sheetBack.addEventListener('click', () => openToolSheet());
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (sheetMode === 'listTool') openToolSheet();
+    else closeSheet();
+  });
   Gerbera.openCommonTool = id => openSheet(id);
 
   /* ============ ヘッダーのメニュー（☰） ============ */
@@ -392,24 +447,35 @@
   mypageBtn.addEventListener('click', () => { closeMenu(); toast('マイページはログイン制の導入とあわせて準備中です'); });
 
   /* ============ 画面下部ナビ ============ */
+  function currentFull() { return location.hash.replace(/^#\/?/, ''); }
   function buildNav() {
     nav.replaceChildren(...NAV.map(item =>
-      h('button', { class: 'bn-item', 'data-hash': item.hash,
-        onclick: () => { location.hash = item.hash; } },
+      h('button', { class: 'bn-item',
+        onclick: () => {
+          if (item.sheet) {
+            (sheetMode === 'list' || sheetMode === 'listTool') ? closeSheet() : openToolSheet();
+            return;
+          }
+          if (!sheet.hidden) closeSheet();
+          location.hash = item.hash;
+        } },
         h('span', { class: 'bn-ico' }, item.icon),
         h('span', { class: 'bn-label' }, item.label))));
   }
   function paintNav(full) {
     const p0 = full.split('/')[0];
+    const toolSheetOpen = sheetMode === 'list' || sheetMode === 'listTool';
     nav.querySelectorAll('.bn-item').forEach((el, i) => {
       const item = NAV[i];
-      el.classList.toggle('active', !!item.match(p0, full));
+      const on = toolSheetOpen ? !!item.sheet : !!item.match(p0, full);
+      el.classList.toggle('active', on);
     });
   }
 
   /* ============ スピードダイヤル（お気に入りツール・全画面で起動） ============ */
   const fabStack = h('div', { class: 'fab-stack' });
-  const timerPill = h('a', { class: 'timer-pill', hidden: true, href: '#tool/timersw' });
+  const timerPill = h('button', { class: 'timer-pill', hidden: true,
+    onclick: () => openSheet('timersw') });
   const sdItems = h('div', { class: 'sd-items' });
   const sdFab = h('button', { class: 'sd-fab', 'aria-label': 'お気に入りツール',
     onclick: () => fabStack.classList.toggle('open') }, '+');
@@ -425,14 +491,14 @@
     const favs = Store.get('favorites', []).filter(id => getTool(id));
     if (!favs.length) {
       sdItems.replaceChildren(
-        h('button', { class: 'sd-item sd-item-hint', onclick: () => { location.hash = 'tools'; } },
+        h('button', { class: 'sd-item sd-item-hint', onclick: () => openToolSheet() },
           h('span', { class: 'sd-item-label' }, 'ツール一覧で★を追加'),
           h('span', { class: 'sd-item-ico' }, '★')));
       return;
     }
     sdItems.replaceChildren(...favs.map(id => {
       const t = getTool(id);
-      return h('button', { class: 'sd-item', onclick: () => { location.hash = 'tool/' + id; } },
+      return h('button', { class: 'sd-item', onclick: () => openSheet(id) },
         h('span', { class: 'sd-item-label' }, t.name),
         h('span', { class: 'sd-item-ico' }, t.icon));
     }));

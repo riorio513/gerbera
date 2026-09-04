@@ -353,6 +353,22 @@
     sheet.hidden = false; sheetBackdrop.hidden = false;
     requestAnimationFrame(() => { sheet.classList.add('open'); sheetBackdrop.classList.add('open'); });
   }
+  /* タブを持つツール（楽曲メモ・メモ・タイマー等）は、表示直後に中身の高さを固定する。
+     → 同じツールならタブを切り替えても小窓の大きさが変わらない。
+        余った分は空白、足りない分はその中でスクロールする。
+     タブの無いツールは自然な高さのまま（項目を足したぶんは素直に伸びる）。 */
+  function lockSheetHeight() {
+    sheetBody.style.height = '';
+    requestAnimationFrame(() => {
+      if (sheet.hidden) return;
+      if (!sheetBody.querySelector('.seg, .cal-tabs')) return;
+      const vh = window.innerHeight;
+      const natural = sheetBody.scrollHeight;
+      const target = Math.min(Math.round(vh * 0.82), Math.max(natural, Math.round(vh * 0.5)));
+      sheetBody.style.height = target + 'px';
+    });
+  }
+  function unlockSheetHeight() { sheetBody.style.height = ''; }
 
   /* 単体ツールを小窓で開く（スピードダイヤル・他ツールからの呼び出し） */
   function openSheet(id) {
@@ -363,9 +379,11 @@
     sheetBack.hidden = true;
     sheetIcon.textContent = t.icon;
     sheetTitle.textContent = t.name;
+    unlockSheetHeight();
     sheetBody.replaceChildren();
     sheetBody.scrollTop = 0;
     sheetCleanup = t.mount(sheetBody) || null;
+    lockSheetHeight();
     showSheet();
     paintNav(currentFull());
   }
@@ -377,6 +395,7 @@
     sheetBack.hidden = true;
     sheetIcon.textContent = '🧰';
     sheetTitle.textContent = 'ツールをえらぶ';
+    unlockSheetHeight();
     sheetBody.replaceChildren(
       h('p', { class: 'note', style: 'margin:0 0 8px' }, '選ぶと、今の画面のまま小窓で開けます。★でお気に入り登録。'),
       toolListEl(id => openToolFromList(id)));
@@ -392,9 +411,11 @@
     sheetBack.hidden = false;
     sheetIcon.textContent = t.icon;
     sheetTitle.textContent = t.name;
+    unlockSheetHeight();
     sheetBody.replaceChildren();
     sheetBody.scrollTop = 0;
     sheetCleanup = t.mount(sheetBody) || null;
+    lockSheetHeight();
   }
 
   function closeSheet() {
@@ -404,7 +425,8 @@
     sheet.classList.remove('open'); sheetBackdrop.classList.remove('open');
     setTimeout(() => {
       if (!sheet.classList.contains('open')) {
-        sheet.hidden = true; sheetBackdrop.hidden = true; sheetBody.replaceChildren();
+        sheet.hidden = true; sheetBackdrop.hidden = true;
+        sheetBody.replaceChildren(); unlockSheetHeight();
       }
     }, 320);
     route();

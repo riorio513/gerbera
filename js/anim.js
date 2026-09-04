@@ -29,8 +29,21 @@
      停止した瞬間に呼ばれる onSettleVisual で最終的な見た目（出目の表示など）を
      反映してもらう。戻り値の promise が解決した時点で「結果表示」へ進んでよい。
      --------------------------------------------------------- */
+  function reduced() {
+    return typeof Gerbera.prefersReducedMotion === 'function' && Gerbera.prefersReducedMotion();
+  }
+
   function rollDie(dieEl, opts) {
     opts = opts || {};
+
+    /* 視差効果を減らす設定：演出を飛ばして即結果 */
+    if (reduced()) {
+      dieEl.classList.remove('rolling', 'settled');
+      dieEl.classList.add('rolled');
+      if (typeof opts.onSettleVisual === 'function') opts.onSettleVisual();
+      return { promise: Promise.resolve(), cancel() {} };
+    }
+
     const dur = opts.duration || AnimTiming.diceRoll;
     const dx = opts.dx != null ? opts.dx : 20;
     const turns = opts.turns != null ? opts.turns : 5;
@@ -95,6 +108,10 @@
   function createBoxDraw(els, timingOverride) {
     const { boxEl, slotEl, stageEl } = els;
     const T = Object.assign({}, AnimTiming, timingOverride || {});
+    /* 視差効果を減らす設定：各段階の待ち時間をほぼ0にして、結果紙だけ静かに出す */
+    if (reduced()) {
+      T.boxShake = 1; T.boxShakeSettle = 1; T.boxEjectOut = 1; T.boxPause = 1; T.boxResultIn = 1;
+    }
     let state = 'idle';
     let cancelled = false;
     let timers = [];

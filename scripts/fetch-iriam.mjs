@@ -72,7 +72,10 @@ function daysAgo(iso) {
   return (Date.now() - Date.parse(iso + 'T00:00:00+09:00')) / 86400000;
 }
 
-async function getEvents() {
+/* ランキングイベント・スコアイベントっぽいものか（配信者ランク別のイベント含む） */
+const RANKING_RE = /ランキング|スコア|ランク別|SCORE|RANK/i;
+
+async function getEventsRaw() {
   const html = await fetchText(EVENTS_URL);
   const $ = cheerio.load(html);
   const cards = $('.notion-collection-card');
@@ -99,17 +102,26 @@ async function getEvents() {
     });
   });
 
-  // 重複除去（URL）
   const seen = new Set();
   const uniq = items.filter(it => (seen.has(it.url) ? false : seen.add(it.url)));
-
-  // 投稿日が新しい順
   uniq.sort((a, b) => String(b.postedDate || '').localeCompare(String(a.postedDate || '')));
+  return uniq;
+}
 
-  // 直近ぶんを優先しつつ、少なくとも3件は残す
-  const recent = uniq.filter(it => daysAgo(it.postedDate) <= EVENT_RECENT_DAYS);
-  const picked = (recent.length >= 3 ? recent : uniq).slice(0, EVENT_MAX);
-  return picked;
+async function getEvents(uniq) {
+  const rows = uniq.filter(it => !RANKING_RE.test((it.category || '') + ' ' + it.title));
+  const recent = rows.filter(it => daysAgo(it.postedDate) <= EVENT_RECENT_DAYS);
+  return (recent.length >= 3 ? recent : rows).slice(0, EVENT_MAX);
+}
+
+async function getRanking(uniq) {
+  // 公開ページ（イベント・キャンペーン一覧）に出ている範囲でのランキング／スコアイベント。
+  // ランク別のランキングイベント等は eventportal（要ログイン）にあることが多く、
+  // ここで取れるのは公式が一覧に載せたぶんだけ。
+  return uniq
+    .filter(it => RANKING_RE.test((it.category || '') + ' ' + it.title))
+    .filter(it => daysAgo(it.postedDate) <= EVENT_RECENT_DAYS + 30)
+    .slice(0, EVENT_MAX);
 }
 
 async function getNews() {
@@ -161,14 +173,18 @@ function nextMonthKey() {
 async function main() {
   const prev = await readExisting();
   let events = [];
+  let ranking = [];
   let news = [];
   const errors = [];
 
   try {
-    events = await getEvents();
+    const uniq = await getEventsRaw();
+    events = await getEvents(uniq);
+    ranking = await getRanking(uniq);
   } catch (e) {
     errors.push(`events: ${e.message}`);
     if (prev?.events) events = prev.events; // 前回分を維持
+    if (prev?.ranking) ranking = prev.ranking;
   }
   try {
     news = await getNews();
@@ -177,7 +193,7 @@ async function main() {
     if (prev?.news) news = prev.news;
   }
 
-  if (!events.length && !news.length) {
+  if (!events.length && !ranking.length && !news.length) {
     console.error('取得結果が空。既存 JSON を維持して終了。', errors);
     process.exit(0);
   }
@@ -191,13 +207,14 @@ async function main() {
     targetMonth: nextMonthKey(),
     note: '本データは IRIAM 公式ページ（info.iriam.com / iriam.com）から自動取得した案内です。日付は告知の投稿日、開催日はタイトルからの推定です。',
     events,
+    ranking,
     news
   };
   if (errors.length) payload.partialErrors = errors;
 
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-  console.log(`書き出し: ${OUT}  events=${events.length} news=${news.length}${errors.length ? '  (partial: ' + errors.join('; ') + ')' : ''}`);
+  console.log(`書き出し: ${OUT}  events=${events.length} ranking=${ranking.length} news=${news.length}${errors.length ? '  (partial: ' + errors.join('; ') + ')' : ''}`);
 }
 
 main().catch(e => {

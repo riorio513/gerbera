@@ -82,10 +82,14 @@
 
       /* 面数・個数が変わったら舞台を作り直す（ロール中は変更UI自体を無効化しているため
          多重実行の心配はない） */
+      function reducedMotion() {
+        return typeof Gerbera.prefersReducedMotion === 'function' && Gerbera.prefersReducedMotion();
+      }
+
       function buildStage() {
         clearActiveAnimations();
         rollStage.replaceChildren();
-        if (st.faces === 6 || st.faces === 4) {
+        if (!reducedMotion() && (st.faces === 6 || st.faces === 4)) {
           const slotClass = st.faces === 6 ? 'die3d-slot' : 'die4-slot';
           const factory = st.faces === 6 ? createDie3D : createDie4D;
           for (let i = 0; i < st.count; i++) {
@@ -114,6 +118,21 @@
 
         const finals = Array.from({ length: st.count }, () => 1 + Math.floor(Math.random() * st.faces));
         let promises;
+
+        if (reducedMotion()) {
+          (rollStage._flatDice || []).forEach((el, i) => {
+            el.classList.add('rolled');
+            el.querySelector('.num').textContent = finals[i];
+          });
+          lastFinals = finals;
+          uiState = 'result';
+          paintResult();
+          postBtn.hidden = false;
+          postImgBtn.hidden = false;
+          rollBtn.disabled = false;
+          facesSel.disabled = false;
+          return;
+        }
 
         if (st.faces === 6 || st.faces === 4) {
           promises = solidInstances.map((inst, i) => inst.roll(finals[i]));

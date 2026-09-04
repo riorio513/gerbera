@@ -65,6 +65,50 @@ window.Gerbera = (function () {
     };
   }
 
+  /* ---- 中央モーダル（カレンダーの入力小窓・デビュー日の確認などで使う） ---- */
+  function modal(opts) {
+    opts = opts || {};
+    const box = document.createElement('div');
+    box.className = 'modal' + (opts.wide ? ' modal-wide' : '');
+    const head = document.createElement('div');
+    head.className = 'modal-head';
+    const title = document.createElement('span');
+    title.className = 'modal-title';
+    title.textContent = opts.title || '';
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close';
+    closeBtn.setAttribute('aria-label', '閉じる');
+    closeBtn.textContent = '×';
+    head.append(title, closeBtn);
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    box.append(head, body);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.append(box);
+    document.body.append(backdrop);
+    document.body.classList.add('modal-open');
+
+    function close() {
+      backdrop.classList.remove('open');
+      document.removeEventListener('keydown', onKey);
+      setTimeout(() => {
+        backdrop.remove();
+        if (!document.querySelector('.modal-backdrop')) document.body.classList.remove('modal-open');
+        if (typeof opts.onClose === 'function') opts.onClose();
+      }, 220);
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    backdrop.addEventListener('click', e => { if (e.target === backdrop && opts.dismissable !== false) close(); });
+    closeBtn.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    requestAnimationFrame(() => backdrop.classList.add('open'));
+
+    if (typeof opts.render === 'function') opts.render(body, { close });
+    return { close, body };
+  }
+
   /* ---- トースト通知 ---- */
   let toastTimer = null;
   function toast(msg) {
@@ -238,5 +282,5 @@ window.Gerbera = (function () {
     openX(postText);
   }
 
-  return { Store, register, getTool, tools, h, uid, emitter, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openX, shareResultImage };
+  return { Store, register, getTool, tools, h, uid, emitter, modal, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openX, shareResultImage };
 })();

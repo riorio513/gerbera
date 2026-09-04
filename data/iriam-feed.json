@@ -36,5 +36,21 @@
       "url": "https://info.iriam.com/3b1afbee5fdb80d19c40d7450480927e"
     }
   ],
+  "ranking": [
+    {
+      "title": "10月度 マンスリーランキングイベント（配信者ランク別）",
+      "category": "ランキングイベント",
+      "postedDate": "2026-08-28",
+      "eventDateText": "10/1〜10/31",
+      "url": "https://info.iriam.com/eventportal#monthly-2026-10"
+    },
+    {
+      "title": "スコアチャレンジ 2026 Autumn",
+      "category": "スコアイベント",
+      "postedDate": "2026-08-20",
+      "eventDateText": "10/10〜10/20",
+      "url": "https://info.iriam.com/eventportal#score-2026-autumn"
+    }
+  ],
   "news": []
 }

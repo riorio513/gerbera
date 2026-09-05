@@ -24,6 +24,15 @@
   --header-h:50px;
   --nav-h:62px;
   --safe-b:env(safe-area-inset-bottom, 0px);
+
+  /* 斜めストライプ（画面の背景専用。小窓＝ボトムシート/モーダルには使わない） */
+  --stripe-rgb:249,154,219;   /* #F99ADB */
+  --stripe-alpha:.05;
+  --stripe-bg:repeating-linear-gradient(45deg,
+    rgba(var(--stripe-rgb), var(--stripe-alpha)) 0px,
+    rgba(var(--stripe-rgb), var(--stripe-alpha)) 6px,
+    transparent 6px,
+    transparent 12px);
 }
 
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -32,7 +41,8 @@ body{
   font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Hiragino Sans',sans-serif;
   font-weight:500;
   color:var(--text);
-  background:var(--bg);
+  background-color:var(--bg);
+  background-image:var(--stripe-bg);
   min-height:100vh;
   line-height:1.6;
 }
@@ -852,6 +862,7 @@ details.editor[open] summary::before{transform:rotate(90deg);}
 :root[data-theme="dark"]{
   --bg:#1D1A22;
   --bg-soft:#262230;
+  --stripe-alpha:.08;
   --main:#D98CA6;
   --main-strong:#E7A9C0;
   --main-deep:#F0C4D5;
@@ -1360,7 +1371,7 @@ button.cal-cell:active{transform:scale(.95);}
 .vote-result-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
 
 /* ---- リスナーの投票ページ（vote.html） ---- */
-.vp-body{background:var(--bg-soft);min-height:100vh;}
+.vp-body{background-color:var(--bg-soft);background-image:var(--stripe-bg);min-height:100vh;}
 .vp-header{
   display:flex;align-items:center;justify-content:center;gap:6px;
   height:var(--header-h);background:var(--bg);border-bottom:1px solid var(--line);

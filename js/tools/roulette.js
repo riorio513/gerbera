@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ルーレット（項目自由追加・編集・保存・ランダム抽選） */
 (function () {
-  const { register, Store, h, uid, toast, openX, shareResultImage } = Gerbera;
+  const { register, Store, h, uid, toast, sharePost, shareResultImage } = Gerbera;
   const KEY = 'roulette.items';
   const COLORS = ['#F2C4D6', '#D9CDF0', '#F9DFEA', '#C8B9E8', '#F3D0DF', '#E3DBF5'];
   const SVGNS = 'http://www.w3.org/2000/svg';
@@ -81,7 +81,7 @@
       const resultArea = h('div');
       function postText() { return `【ルーレット】\nただいまのルーレット結果は${lastWinnerLabel}でした！`; }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (lastWinnerLabel) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (lastWinnerLabel) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!lastWinnerLabel) return;

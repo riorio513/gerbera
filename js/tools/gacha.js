@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ガチャ（抽選結果編集・排出率設定・リスナー名入力・結果表示・複数連） */
 (function () {
-  const { register, Store, h, uid, toast, fmtNum, openX, shareResultImage } = Gerbera;
+  const { register, Store, h, uid, toast, fmtNum, sharePost, shareResultImage } = Gerbera;
   const KEY = 'gacha.items';
   const PULL_PRESETS = [1, 10, 100];
   const MAX_PULL = 1000;
@@ -32,7 +32,7 @@
         return `【ガチャ】\n${subject}${fmtNum(last.n)}連ガチャの結果！\n` + tallyLines(TALLY_SHOW_MAX).join('\n');
       }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (last) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (last) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!last) return;

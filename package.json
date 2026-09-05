@@ -2,12 +2,15 @@
   "name": "gerbera-tools",
   "version": "1.0.0",
   "private": true,
-  "description": "ガーベラ本体は静的サイト（js/ css/ をそのまま配信）。ここは付随スクリプト用。",
+  "description": "ガーベラ本体は静的サイト（js/ css/ をそのまま配信）。api/ は投票機能のサーバー処理。",
   "type": "module",
   "scripts": {
     "fetch:iriam": "node scripts/fetch-iriam.mjs"
   },
   "devDependencies": {
     "cheerio": "^1.0.0"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.0.0"
   }
 }

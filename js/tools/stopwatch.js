@@ -2,7 +2,7 @@
 /* ツール: ストップウォッチ（開始・停止・リセット・ラップ）
    グローバル単一エンジン: 画面を移動しても計測が続き、再読込しても復元される */
 (function () {
-  const { register, Store, h, fmtClock, emitter, openX } = Gerbera;
+  const { register, Store, h, fmtClock, emitter, sharePost } = Gerbera;
   const KEY = 'stopwatch.state';
 
   const SW = {
@@ -69,7 +69,7 @@
       const lapBtn = h('button', { class: 'btn btn-ghost', onclick: () => SW.lap() }, '🚩 ラップ');
       const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => SW.reset() }, 'リセット');
       const postBtn = h('button', { class: 'btn btn-lav btn-full mt12',
-        onclick: () => openX(`【ストップウォッチ】\nただいまの記録は${fmtClock(SW.now(), true)}でした！`) }, '🐦 記録をXへポスト');
+        onclick: () => sharePost(`【ストップウォッチ】\nただいまの記録は${fmtClock(SW.now(), true)}でした！`) }, '🐦 記録をXへポスト');
       const lapList = h('div');
 
       function paintTime() { display.textContent = fmtClock(SW.now(), true); }

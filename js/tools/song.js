@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: 楽曲メモ（持ち歌保存・リクエスト管理・並び替え・次に歌う曲・歌唱履歴） */
 (function () {
-  const { register, Store, h, uid, toast, openX, confirmDialog } = Gerbera;
+  const { register, Store, h, uid, toast, sharePost, confirmDialog } = Gerbera;
   const KEY = 'song';
 
   register({
@@ -35,7 +35,7 @@
                   h('div', { class: 'vstack', style: 'gap:6px' },
                     h('button', { class: 'btn btn-primary btn-sm', onclick: () => sung(next) }, '✓ 歌った'),
                     h('button', { class: 'btn btn-lav btn-sm',
-                      onclick: () => openX(`【楽曲メモ】\n次に歌う曲は${next.title}です！みんな聞きに来てね！`) }, '🐦 Xへポスト'))))
+                      onclick: () => sharePost(`【楽曲メモ】\n次に歌う曲は${next.title}です！みんな聞きに来てね！`) }, '🐦 Xへポスト'))))
             : h('div', { class: 'next-card center' },
                 h('div', { class: 'note' }, 'リクエストはまだありません🎵')));
       }

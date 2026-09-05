@@ -4,7 +4,7 @@
    小さいコンパクトな行にまとめ、スクロールなしで並べられるようにする。
    加算単位・上限などの細かい設定は行の下に折りたたんで表示する。 */
 (function () {
-  const { register, Store, h, uid, toast, fmtNum, openX, confirmDialog } = Gerbera;
+  const { register, Store, h, uid, toast, fmtNum, sharePost, confirmDialog } = Gerbera;
   const KEY = 'counters';
   const DEFAULT_LIMIT = 99999;
   const MIN_VALUE = -99999;
@@ -96,7 +96,7 @@
             } }, '↺ 数を0に戻す'),
           h('button', { class: 'btn btn-ghost btn-sm btn-full mt8',
             onclick: () => {
-              openX(`【カウンター】${c.name || 'カウンター'}の今の数は${fmtNum(c.value)}。目標まであと${fmtNum(Math.max(0, limit() - c.value))}です！`);
+              sharePost(`【カウンター】${c.name || 'カウンター'}の今の数は${fmtNum(c.value)}。目標まであと${fmtNum(Math.max(0, limit() - c.value))}です！`);
             } }, '🐦 Xにポストする'));
 
         const moreBtn = h('button', { class: 'cnt-more', 'aria-label': '増減数・上限の設定を開く',

@@ -4,7 +4,7 @@
    演出（Gerbera.createBoxDraw）は分離している。boxAnim.run(label) は
    受け取った文字列を演出するだけで、抽選そのものには関与しない。 */
 (function () {
-  const { register, Store, h, uid, toast, openX, shareResultImage, createBoxDraw, confirmDialog } = Gerbera;
+  const { register, Store, h, uid, toast, sharePost, shareResultImage, createBoxDraw, confirmDialog } = Gerbera;
   const KEY = 'box.items';
 
   register({
@@ -20,7 +20,7 @@
         return `【抽選結果】\n${subject}は${last.label}でした！`;
       }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (last) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (last) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!last) return;

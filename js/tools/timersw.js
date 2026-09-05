@@ -3,7 +3,7 @@
    計測エンジンは timer.js / stopwatch.js のグローバル単一エンジンを共有する。
    画面を移動しても計測は続き、再読込しても復元される。 */
 (function () {
-  const { register, Store, h, uid, toast, fmtClock, openX, confirmDialog } = Gerbera;
+  const { register, Store, h, uid, toast, fmtClock, sharePost, confirmDialog } = Gerbera;
   const KEY_MODE = 'timersw.mode';
   const KEY_P = 'timer.presets';
 
@@ -62,7 +62,7 @@
           T.reset();
         } }, 'リセット');
         const postBtn = h('button', { class: 'btn btn-lav btn-full mt12',
-          onclick: () => openX(`【タイマー】\nただいまの記録は${fmtClock(T.remainMs, false)}でした！`) }, '🐦 記録をXへポスト');
+          onclick: () => sharePost(`【タイマー】\nただいまの記録は${fmtClock(T.remainMs, false)}でした！`) }, '🐦 記録をXへポスト');
 
         const numIn = (max, label) => h('input', {
           class: 'input w-num', type: 'number', min: 0, max, inputmode: 'numeric', placeholder: '0',
@@ -138,7 +138,7 @@
           SW.reset();
         } }, 'リセット');
         const postBtn = h('button', { class: 'btn btn-lav btn-full mt12',
-          onclick: () => openX(`【ストップウォッチ】\nただいまの記録は${fmtClock(SW.now(), true)}でした！`) }, '🐦 記録をXへポスト');
+          onclick: () => sharePost(`【ストップウォッチ】\nただいまの記録は${fmtClock(SW.now(), true)}でした！`) }, '🐦 記録をXへポスト');
         const lapList = h('div');
 
         function paintTime() { display.textContent = fmtClock(SW.now(), true); }

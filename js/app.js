@@ -41,7 +41,7 @@
     { label: 'トークテーマガチャ',       tool: 'theme' },
     { label: '心理テスト',               tool: 'psych' },
     { label: '楽曲メモ',                 tool: 'song' },
-    { label: '投票',                     tool: null }
+    { label: '投票',                     tool: 'vote' }
   ];
   Gerbera.TOOL_MENU = TOOL_MENU;
 

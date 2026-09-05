@@ -1233,3 +1233,148 @@ button.cal-cell:active{transform:scale(.95);}
 .doc-sec:last-child{margin-bottom:0;}
 .doc-sec h2{font-size:15px;font-weight:900;color:var(--main-deep);margin-bottom:5px;}
 .doc-sec p{font-size:14px;line-height:1.9;color:var(--text);}
+
+/* ============================================================
+   投票（ライバーのツール／リスナーのページ）と 共有（アカウント連携）
+   ============================================================ */
+
+/* ---- 投稿先を選ぶ小窓 ---- */
+.share-preview{
+  background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius-s);
+  padding:10px 12px;font-size:13px;line-height:1.7;color:var(--text-sub);
+  white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow-y:auto;
+}
+.share-list{display:flex;flex-direction:column;margin-top:10px;}
+.share-row{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:11px 4px;border-bottom:1px solid var(--line);
+}
+.share-list .share-row:last-child{border-bottom:none;}
+.share-row:active{background:var(--main-faint);}
+.share-row-ico{font-size:20px;flex-shrink:0;}
+.share-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+.share-row-name{font-size:15px;font-weight:900;color:var(--text);}
+.share-row-hint{font-size:11.5px;font-weight:500;color:var(--text-sub);}
+.set-row-sub-on{color:var(--main-strong)!important;font-weight:700;}
+
+/* ---- 3枚の画面をスライドで送る ---- */
+.vote-pane{opacity:0;transform:translateX(14px);transition:opacity .26s ease,transform .26s ease;}
+.vote-pane.in{opacity:1;transform:none;}
+.reduce-motion .vote-pane{transition:none;}
+
+.vote-card{display:flex;flex-direction:column;}
+.vote-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.vote-head-toggle{display:flex;align-items:center;gap:7px;margin-left:auto;flex-shrink:0;}
+.vote-toggle-label{font-size:12px;font-weight:700;color:var(--text-sub);}
+.vote-title-in{min-height:62px;resize:none;}
+
+/* 制限時間の行。OFFのときも行は残し、中身だけ隠して高さを変えない */
+/* OFFのときは中身を visibility で隠すだけにして高さを保つ。
+   中央寄せだと隠れた入力欄に押されてラベルが見切れるので左寄せにする。 */
+.vote-limit{
+  display:flex;align-items:center;justify-content:flex-start;gap:5px;
+  margin-top:8px;padding:6px 10px;border-radius:var(--radius-s);
+  background:var(--lav-soft);
+}
+.vote-limit-label{
+  font-size:12.5px;font-weight:700;color:var(--lav-strong);
+  margin-right:2px;white-space:nowrap;flex-shrink:0;
+}
+.vote-limit b{font-size:12px;font-weight:700;color:var(--text-sub);flex-shrink:0;}
+/* 小さい画面でも「時 分 秒」が1行に収まるよう、この行の入力欄だけ細くする */
+.vote-limit .w-num{width:48px;min-width:0;padding-left:4px;padding-right:4px;text-align:center;}
+.vote-limit.off{background:var(--bg-soft);}
+.vote-limit.off > *:not(.vote-limit-label){visibility:hidden;}
+.vote-limit.off .vote-limit-label{color:var(--text-sub);}
+.vote-limit.off .vote-limit-label::after{content:'なし';margin-left:4px;font-weight:500;}
+
+.vote-opts{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.vote-opt-row{display:flex;align-items:center;gap:6px;}
+
+/* 中央上部の残り時間 */
+.vote-clock{
+  align-self:center;font-size:14px;font-weight:900;color:var(--lav-strong);
+  background:var(--lav-soft);border-radius:999px;padding:4px 14px;margin-bottom:10px;
+  font-variant-numeric:tabular-nums;
+}
+.vote-clock.over,.vote-clock.soon{background:var(--danger-soft);color:var(--danger);}
+
+.vote-done-mark{
+  align-self:center;width:44px;height:44px;border-radius:50%;
+  background:var(--main);color:#fff;font-size:24px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;margin-top:4px;
+}
+.vote-done-text{text-align:center;font-size:16px;font-weight:900;color:var(--main-deep);margin-top:10px;}
+.vote-link{
+  margin-top:12px;padding:9px 11px;border-radius:var(--radius-s);
+  background:var(--bg-soft);border:1px dashed var(--main-soft);
+  font-size:12px;color:var(--text-sub);word-break:break-all;line-height:1.6;
+}
+
+/* 集計画面は最初「集計を行う」だけを中央上部に置く */
+.vote-result-head{display:flex;flex-direction:column;align-items:center;}
+.vote-tally-btn{min-width:190px;}
+.vote-winner{
+  text-align:center;font-size:19px;font-weight:900;color:var(--main-deep);
+  line-height:1.5;margin-top:18px;overflow-wrap:anywhere;
+}
+.vote-total{text-align:center;font-size:13px;font-weight:700;color:var(--text-sub);margin-top:4px;}
+.vote-bars{display:flex;flex-direction:column;gap:11px;margin-top:14px;}
+.vote-bar-head{display:flex;align-items:baseline;gap:8px;}
+.vote-bar-label{flex:1;min-width:0;font-size:14px;font-weight:900;color:var(--text);overflow-wrap:anywhere;}
+.vote-bar-count{
+  font-size:12px;font-weight:700;color:var(--main-strong);flex-shrink:0;
+  font-variant-numeric:tabular-nums;
+}
+.vote-bar-track{
+  height:10px;border-radius:999px;background:var(--main-faint);
+  margin-top:4px;overflow:hidden;
+}
+.vote-bar-fill{
+  display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--main),var(--lav));
+  transition:width .5s cubic-bezier(.2,.8,.2,1);
+}
+.reduce-motion .vote-bar-fill{transition:none;}
+.vote-bar-names{font-size:11.5px;color:var(--text-sub);margin-top:3px;overflow-wrap:anywhere;}
+.vote-result-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
+
+/* ---- リスナーの投票ページ（vote.html） ---- */
+.vp-body{background:var(--bg-soft);min-height:100vh;}
+.vp-header{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:var(--header-h);background:var(--bg);border-bottom:1px solid var(--line);
+}
+.vp-main{max-width:520px;margin:0 auto;padding:16px 15px 40px;}
+.vp-card{display:flex;flex-direction:column;}
+.vp-title{
+  font-size:20px;line-height:1.55;color:var(--main-deep);text-align:center;
+  overflow-wrap:anywhere;
+}
+.vp-opts{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.vp-opt{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:14px 13px;border-radius:var(--radius-s);
+  background:var(--bg);border:1.5px solid var(--main-soft);
+  transition:transform .12s,background .12s,border-color .12s;
+}
+.vp-opt:active{transform:scale(.985);background:var(--main-faint);border-color:var(--main);}
+.vp-opt:disabled{opacity:.5;}
+.vp-opt-mark{
+  flex-shrink:0;width:26px;height:26px;border-radius:50%;
+  background:var(--main-soft);color:var(--main-deep);
+  font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;
+}
+.vp-opt-label{flex:1;min-width:0;font-size:15.5px;font-weight:700;overflow-wrap:anywhere;}
+.vp-notice-ico{align-self:center;font-size:40px;line-height:1;}
+.vp-notice{
+  text-align:center;font-size:17px;font-weight:900;color:var(--main-deep);
+  line-height:1.7;margin-top:12px;
+}
+.vp-confirm-q{text-align:center;font-size:15px;font-weight:700;}
+.vp-confirm-choice{
+  margin-top:10px;padding:14px 12px;border-radius:var(--radius-s);
+  background:var(--main-faint);border:1px solid var(--main-soft);
+  text-align:center;font-size:17px;font-weight:900;color:var(--main-deep);
+  overflow-wrap:anywhere;
+}

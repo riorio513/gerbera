@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: おみくじ（運勢・コメント編集、くじ追加削除、リスナー名、Xへポスト） */
 (function () {
-  const { register, Store, h, uid, toast, openX, shareResultImage } = Gerbera;
+  const { register, Store, h, uid, toast, sharePost, shareResultImage } = Gerbera;
   const KEY = 'omikuji.lots';
 
   function loadLots() {
@@ -24,7 +24,7 @@
       function subjectText() { return last.listener ? `${last.listener}さんの今日の運勢` : '今日の運勢'; }
       function postText() { return `【おみくじ】\n${subjectText()}は${last.lot.name}でした！${last.lot.comment}`; }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (last) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (last) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!last) return;

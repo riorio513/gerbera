@@ -5,7 +5,7 @@
    従来のフラットな回転アニメーション（anim.js の rollDie）にフォールバックする。
    どちらも「演出」だけを担当し、何の目が出るかはこのファイル内の乱数決定が行う。 */
 (function () {
-  const { register, Store, h, openX, shareResultImage, rollDie, AnimTiming, createDie3D, createDie4D } = Gerbera;
+  const { register, Store, h, sharePost, shareResultImage, rollDie, AnimTiming, createDie3D, createDie4D } = Gerbera;
   const KEY = 'dice';
   const FACE_OPTIONS = [4, 6, 8, 10, 12, 20, 100];
 
@@ -27,7 +27,7 @@
 
       function postText() { return `【サイコロ】\nサイコロの結果は${lastFinals.join('・')}でした！`; }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (lastFinals) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (lastFinals) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!lastFinals) return;

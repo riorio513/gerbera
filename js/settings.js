@@ -16,7 +16,12 @@
     notify: false,       // アプリ内リマインド（OS通知ではない）
     dark: false,
     iriam: true,         // 配信管理画面に IRIAM 最新情報を出すか
-    reduceMotion: false
+    reduceMotion: false,
+    /* アカウント連携。保存するのは投稿先を開くための宛先だけで、
+       パスワードやトークンは一切あずからない。 */
+    accX: '',            // Xのユーザー名（@なし）
+    accDiscord: '',      // Discordのチャンネル/サーバーURL
+    accIriam: ''         // IRIAMのプロフィールURL
   };
 
   const ev = emitter();
@@ -142,6 +147,71 @@
     });
   }
 
+  /* ---------- アカウント連携 ----------
+     ここで保存するのは「どこを開くか」だけ。自動投稿はしない（Xは有料APIが要り、
+     IRIAMには公開APIが無い）ので、ガーベラは文面を用意して画面を開くところまでを担う。
+     開く先は必ずhttpsのURLに限る（javascript: などを開かせないため）。 */
+  const ACCOUNTS = [
+    { key: 'accX', label: 'X（旧Twitter）', icon: '🐦',
+      kind: 'handle', placeholder: 'ユーザー名（@は不要）',
+      note: '連携すると、各ツールの「ポスト」で投稿先としてXを選べます。文面を入れた投稿画面が開くので、投稿ボタンはご自身で押してください。' },
+    { key: 'accDiscord', label: 'Discord', icon: '💬',
+      kind: 'url', placeholder: 'https://discord.com/channels/...',
+      note: '投稿したいチャンネルを開いた状態のURLを貼ってください。共有すると文面がコピーされ、そのチャンネルが開きます。貼り付けて送信してください。' },
+    { key: 'accIriam', label: 'IRIAM', icon: '🎙️',
+      kind: 'url', placeholder: 'https://www.iriam.com/...',
+      note: 'IRIAMには外部から投稿するしくみが公開されていないため、投稿先としては選べません。設定すると、共有する文面の最後にプロフィールのURLを添えます。' }
+  ];
+
+  function sanitizeHandle(v) {
+    return String(v || '').trim().replace(/^@+/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 15);
+  }
+  function sanitizeUrl(v) {
+    const s = String(v || '').trim();
+    if (!s) return '';
+    try {
+      const u = new URL(s);
+      return u.protocol === 'https:' ? u.href : null;
+    } catch (e) { return null; }
+  }
+  function accValue(a) {
+    const raw = data[a.key];
+    if (!raw) return '未連携';
+    return a.kind === 'handle' ? '@' + raw : raw;
+  }
+  function openAccountFlow(a) {
+    modal({
+      title: a.icon + ' ' + a.label,
+      render: (body, ctl) => {
+        const input = h('input', { class: 'input', placeholder: a.placeholder,
+          value: data[a.key] ? (a.kind === 'handle' ? '@' + data[a.key] : data[a.key]) : '' });
+        const submit = () => {
+          const raw = input.value.trim();
+          if (!raw) { Settings.set({ [a.key]: '' }); ctl.close(); toast('連携を解除しました'); refreshSettingsScreen(); return; }
+          const v = a.kind === 'handle' ? sanitizeHandle(raw) : sanitizeUrl(raw);
+          if (v === null) { toast('https:// で始まるURLを貼ってください'); return; }
+          if (!v) { toast('入力内容を確認してください'); return; }
+          Settings.set({ [a.key]: v });
+          ctl.close();
+          toast(a.label + 'を連携しました');
+          refreshSettingsScreen();
+        };
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+        body.append(
+          h('p', { class: 'note', style: 'margin-bottom:10px;line-height:1.8' }, a.note),
+          input,
+          h('button', { class: 'btn btn-primary btn-full mt16', onclick: submit }, '保存'),
+          data[a.key]
+            ? h('button', { class: 'btn btn-ghost btn-full mt8', onclick: () => {
+                Settings.set({ [a.key]: '' }); ctl.close();
+                toast('連携を解除しました'); refreshSettingsScreen();
+              } }, '連携を解除する')
+            : null);
+        setTimeout(() => input.focus(), 60);
+      }
+    });
+  }
+
   /* ---------- デビュー日の設定フロー ---------- */
   /* 一度設定するとロックされる項目だが、日付を打ち間違えたまま直せないと
      「◯日目」がずっと合わなくなるため、確認を重ねたうえでの修正だけは通す。 */
@@ -246,6 +316,17 @@
           'オフにすると、配信管理画面のIRIAMイベント情報が表示されなくなります'),
         toggleRow('すべての視差効果を減らす', 'reduceMotion',
           '各ツールの設定より、この設定が優先されます')),
+
+      h('div', { class: 'section-label', style: 'margin:18px 2px 6px' }, '🔗 アカウント連携'),
+      h('div', { class: 'set-list' },
+        ACCOUNTS.map(a => h('button', { class: 'set-row set-row-link', onclick: () => openAccountFlow(a) },
+          h('div', { class: 'set-row-main' },
+            h('span', { class: 'set-row-title' }, a.icon + '　' + a.label),
+            h('span', { class: 'set-row-sub' + (data[a.key] ? ' set-row-sub-on' : '') }, accValue(a))),
+          h('span', { class: 'set-row-chev' }, '›')))),
+      h('p', { class: 'note', style: 'margin:8px 2px 0;line-height:1.8' },
+        '連携しても、ガーベラが勝手に投稿することはありません。文面を用意して投稿画面を開くところまでを行い、投稿ボタンはご自身で押していただきます。'),
+
       h('div', { class: 'set-list mt16' },
         linkRow('利用規約', 'settings/terms'),
         linkRow('購入管理', 'settings/purchase')),

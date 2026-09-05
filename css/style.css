@@ -125,6 +125,10 @@ button.home-info:active{transform:scale(.985);}
 }
 .home-info-notice .home-info-body,
 .home-info-notice .home-info-date{color:#5C3A2E;}
+/* ホームは1画面に収めたいので、長いお知らせは2行までにする（全文は☰→おしらせ） */
+.home-info-notice .home-info-body{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
 .home-info-x{
   position:absolute;right:7px;top:50%;transform:translateY(-50%);
   width:26px;height:26px;border-radius:50%;
@@ -264,6 +268,16 @@ button.home-info:active{transform:scale(.985);}
 }
 .icon-btn:active{transform:scale(.9);}
 .icon-btn.danger{color:var(--danger);background:var(--danger-soft);}
+/* アイコンだけのボタンは、下に何のボタンか分かる短いラベルを出す */
+.icon-btn[data-lbl]{
+  width:auto;min-width:38px;height:auto;min-height:38px;border-radius:19px;
+  flex-direction:column;gap:1px;padding:5px 7px 4px;line-height:1;
+}
+.icon-btn[data-lbl]::after{
+  content:attr(data-lbl);
+  font-size:9.5px;font-weight:700;line-height:1;white-space:nowrap;
+}
+.icon-btn-sm[data-lbl]{min-width:34px;min-height:34px;font-size:14px;padding:4px 6px 3px;}
 
 /* ---------- 入力 ---------- */
 .input{
@@ -591,39 +605,43 @@ select.input{
 .cnt-more.open{background:var(--main);border-color:var(--main);color:#fff;}
 .cnt-settings{padding:10px 2px 2px;border-top:1px dashed var(--line);margin-top:8px;}
 
-/* ---------- リスナーメモ：リスナーごとにたためるグループ ---------- */
-.lm-group{
-  background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius-s);
-  margin-bottom:8px;overflow:hidden;
+/* ---------- リスナーメモ：一覧（検索・50音・絞り込み）と詳細 ---------- */
+.lm-chiprow{display:flex;flex-wrap:wrap;gap:6px;}
+.lm-index{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;}
+.lm-idx{
+  min-width:26px;height:26px;border-radius:8px;font-size:12.5px;font-weight:700;
+  color:var(--text-sub);background:var(--bg-soft);border:1px solid var(--line);
+  display:inline-flex;align-items:center;justify-content:center;padding:0 4px;
 }
-.lm-group summary{
-  list-style:none;cursor:pointer;user-select:none;
-  padding:12px 14px;display:flex;align-items:center;gap:8px;
+.lm-idx.on{background:var(--main);border-color:var(--main);color:#fff;}
+.lm-idx.off{opacity:.35;}
+.lm-count{margin-left:auto;font-size:12px;font-weight:700;color:var(--text-sub);}
+.lm-rows{display:flex;flex-direction:column;}
+.lmr{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  padding:11px 4px;border-bottom:1px solid var(--line);
 }
-.lm-group summary::-webkit-details-marker{display:none;}
-.lm-group summary::before{content:"▸";font-size:12px;color:var(--text-sub);transition:transform .18s;flex-shrink:0;}
-.lm-group[open] summary::before{transform:rotate(90deg);}
-.lm-name{font-size:15px;font-weight:900;color:var(--text);flex-shrink:0;}
-.lm-preview{
-  font-size:12.5px;color:var(--text-sub);font-weight:500;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;
+.lm-rows .lmr:last-child{border-bottom:none;}
+.lmr:active{background:var(--main-faint);}
+.lmr-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.lmr-name{font-size:15px;font-weight:900;color:var(--text);overflow-wrap:anywhere;}
+.lmr-sub{font-size:11.5px;font-weight:500;color:var(--text-sub);}
+.lmr-marks{display:inline-flex;gap:3px;flex-shrink:0;}
+.lmr-chev{color:var(--text-sub);font-size:18px;flex-shrink:0;}
+.lmr-danger .lmr-name{color:var(--danger);}
+.lm-back{
+  font-size:14px;font-weight:700;color:var(--main-strong);
+  padding:6px 2px 10px;display:inline-block;
 }
-.lm-group[open] .lm-preview{display:none;}
-.lm-group .memo-grid{padding:0;}
-.lm-group-body{padding:2px 12px 12px;}
-.lm-group.lm-danger{border-color:var(--danger);}
-.lm-group.lm-danger > summary{color:var(--danger);}
-.lm-group.lm-danger .lm-name{color:var(--danger);}
-.lm-chips{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;}
+.lm-detail-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.lm-name{font-size:16px;font-weight:900;color:var(--text);}
+.lm-danger-card{border-color:var(--danger);}
+.lm-danger-card .lm-name{color:var(--danger);}
 .lm-chip{
   font-size:11px;font-weight:700;line-height:1;background:var(--bg);
   border:1px solid var(--line);border-radius:5px;padding:2px 4px;
 }
 .lm-chip.danger{color:var(--danger);border-color:var(--danger);}
-.lm-meta{
-  background:var(--bg);border:1px solid var(--line);border-radius:11px;
-  padding:10px;margin-bottom:8px;
-}
 .lm-meta-row{display:flex;justify-content:space-between;gap:8px;font-size:13px;}
 .lm-meta-k{font-weight:700;color:var(--text-sub);}
 .lm-meta-v{font-weight:700;text-align:right;}
@@ -855,6 +873,8 @@ details.editor[open] summary::before{transform:rotate(90deg);}
   border:1px solid var(--lav-soft);border-radius:var(--radius-s);padding:13px 14px;
 }
 .dash-plan:active{transform:scale(.99);}
+.dash-plan-head{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;}
+.dash-plan-hint{font-size:11px;font-weight:500;color:var(--text-sub);line-height:1.4;}
 .dash-plan-name{font-size:15px;font-weight:900;color:var(--main-deep);overflow-wrap:anywhere;}
 .dash-plan-tools{font-size:13px;font-weight:700;color:var(--lav-strong);}
 .dash-plan-none{font-size:14.5px;font-weight:700;color:var(--text-sub);}
@@ -1040,7 +1060,8 @@ body.modal-open{overflow:hidden;}
   padding-top:5px;gap:2px;overflow:hidden;
 }
 .cal-cell-empty{background:transparent;}
-.cal-cell:active{transform:scale(.95);}
+button.cal-cell:active{transform:scale(.95);}
+.cal-cell-ro{cursor:default;}
 .cal-cell-n{font-size:13.5px;font-weight:700;color:var(--text);line-height:1;}
 .cal-cell-n.sun{color:var(--danger);}
 .cal-cell-n.sat{color:var(--lav-strong);}
@@ -1051,6 +1072,10 @@ body.modal-open{overflow:hidden;}
   position:absolute;top:2px;right:2px;font-size:9px;font-weight:900;line-height:1;
   padding:1px 3px;border-radius:4px;
 }
+/* ホームのカレンダーは「ひと目で分かる」用途なので、1画面に収まるよう少し詰める */
+.home-cal .cal-cell{aspect-ratio:1 / 0.8;}
+.home-cal .cal-legend{margin:8px 0 0;}
+.home-cal .cal-head{margin:0 0 8px;}
 .cal-plus.done{background:#E8B15C;color:#5A3A12;}
 .cal-plus.plan{background:transparent;color:var(--text-sub);border:1px dashed var(--text-sub);}
 :root[data-theme="dark"] .cal-plus.done{background:#C9922E;color:#241a0a;}
@@ -1070,6 +1095,11 @@ body.modal-open{overflow:hidden;}
   background:var(--bg-soft);border-radius:999px;padding:8px 1px;white-space:nowrap;
 }
 .cal-tab.on{background:var(--main);color:#fff;}
+/* 入力小窓：タブを切り替えても大きさが変わらないよう、中身の高さを固定して
+   その中だけスクロールさせる。「追加」ボタンは常に最下部。 */
+.cal-modal-body{display:flex;flex-direction:column;overflow:hidden;}
+.cal-pane{height:min(46vh,320px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;}
+.cal-foot{flex-shrink:0;padding-top:10px;border-top:1px solid var(--line);margin-top:10px;}
 .cal-pane{display:flex;flex-direction:column;gap:8px;}
 .cal-add{display:flex;gap:6px;}
 .cal-add .input{flex:1;}
@@ -1093,9 +1123,21 @@ body.modal-open{overflow:hidden;}
    ============================================================ */
 .kanri-iriam{
   background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:12px;margin-bottom:14px;
+  box-shadow:var(--shadow);padding:10px;margin-bottom:10px;
 }
-.kanri-iriam-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.kanri-iriam-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+/* 配信管理はスクロールなしで収めたいので、IRIAM欄はコンパクトに */
+.kanri-iriam .iriam-body{gap:5px;}
+.kanri-iriam .iriam-item{padding:6px 9px;gap:1px;}
+.kanri-iriam .iriam-item-title{
+  font-size:12.5px;line-height:1.38;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.kanri-iriam .iriam-item-meta{font-size:11px;}
+.kanri-iriam .iriam-tag{font-size:9.5px;padding:2px 4px;margin-right:4px;}
+.kanri-iriam .iriam-src{font-size:11px;padding:0;}
+.kanri-iriam .section-label{font-size:12.5px;}
+.kanri-iriam .kanri-more{font-size:11px;padding:4px 9px;}
 .kanri-more{
   flex-shrink:0;font-size:13px;font-weight:700;color:var(--main-strong);
   background:var(--main-faint);border:1px solid var(--main-soft);border-radius:999px;padding:5px 11px;
@@ -1127,6 +1169,10 @@ body.modal-open{overflow:hidden;}
 .planday-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .planday-btn{
   flex-direction:column;gap:5px;min-height:84px;padding:14px 8px;font-size:14.5px;
+}
+.planday-memo{
+  width:100%;flex-direction:row;gap:9px;min-height:56px;margin-bottom:10px;
+  border-color:var(--main);background:var(--main-faint);
 }
 
 /* ============================================================

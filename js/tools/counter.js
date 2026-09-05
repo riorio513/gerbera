@@ -104,7 +104,7 @@
             h('div', { class: 'cnt-mid-row' }, valueEl, remainEl)),
           h('button', { class: 'cnt-btn plus', onclick: () => bump(1), 'aria-label': '増やす' }, '＋'),
           moreBtn,
-          h('button', { class: 'icon-btn danger', 'aria-label': 'このカウンターを削除',
+          h('button', { class: 'icon-btn danger', 'aria-label': 'このカウンターを削除', 'data-lbl': '削除',
             onclick: () => {
               if (!confirm(`「${c.name || 'カウンター'}」を削除しますか？`)) return;
               counters = counters.filter(x => x.id !== c.id);

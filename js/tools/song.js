@@ -59,18 +59,18 @@
             h('div', { class: 'grow' },
               h('div', { class: 'row-main' }, r.title),
               r.from ? h('div', { class: 'row-sub' }, r.from + ' さん') : null),
-            h('button', { class: 'icon-btn', 'aria-label': '上へ', onclick: () => {
+            h('button', { class: 'icon-btn', 'aria-label': '上へ', 'data-lbl': '上へ', onclick: () => {
               if (i === 0) return;
               [st.requests[i - 1], st.requests[i]] = [st.requests[i], st.requests[i - 1]];
               save(); render();
             } }, '↑'),
-            h('button', { class: 'icon-btn', 'aria-label': '下へ', onclick: () => {
+            h('button', { class: 'icon-btn', 'aria-label': '下へ', 'data-lbl': '下へ', onclick: () => {
               if (i === st.requests.length - 1) return;
               [st.requests[i + 1], st.requests[i]] = [st.requests[i], st.requests[i + 1]];
               save(); render();
             } }, '↓'),
-            h('button', { class: 'icon-btn', 'aria-label': '歌った', onclick: () => sung(r) }, '✓'),
-            h('button', { class: 'icon-btn danger', 'aria-label': '削除', onclick: () => {
+            h('button', { class: 'icon-btn', 'aria-label': '歌った', 'data-lbl': '歌った', onclick: () => sung(r) }, '✓'),
+            h('button', { class: 'icon-btn danger', 'aria-label': '削除', 'data-lbl': '削除', onclick: () => {
               st.requests = st.requests.filter(x => x.id !== r.id);
               save(); render();
             } }, '🗑')));
@@ -103,7 +103,7 @@
               toast(`「${s.title}」をリクエストに入れました`);
               paintNext();
             } }, '→ リクエストへ'),
-            h('button', { class: 'icon-btn danger', 'aria-label': '削除', onclick: () => {
+            h('button', { class: 'icon-btn danger', 'aria-label': '削除', 'data-lbl': '削除', onclick: () => {
               st.repertoire = st.repertoire.filter(x => x.id !== s.id);
               save(); render();
             } }, '🗑')));

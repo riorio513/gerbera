@@ -139,7 +139,7 @@
             h('input', { class: 'input w-num', type: 'number', min: 0, step: 'any', inputmode: 'decimal',
               value: it.rate, placeholder: '排出率', 'aria-label': '排出率',
               oninput: e => { it.rate = e.target.value === '' ? 0 : +e.target.value; save(); paintTotal(); } }),
-            h('button', { class: 'icon-btn danger', 'aria-label': 'この景品を削除',
+            h('button', { class: 'icon-btn danger', 'aria-label': 'この景品を削除', 'data-lbl': '削除',
               onclick: () => {
                 items = items.filter(x => x.id !== it.id);
                 save();

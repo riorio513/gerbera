@@ -56,7 +56,7 @@
                 oninput: e => { lot.name = e.target.value; Store.set(KEY, lots); } }),
               h('input', { class: 'input', value: lot.comment, placeholder: 'コメント',
                 oninput: e => { lot.comment = e.target.value; Store.set(KEY, lots); } })),
-            h('button', { class: 'icon-btn danger', 'aria-label': 'このくじを削除',
+            h('button', { class: 'icon-btn danger', 'aria-label': 'このくじを削除', 'data-lbl': '削除',
               onclick: () => {
                 lots = lots.filter(l => l.id !== lot.id);
                 Store.set(KEY, lots);

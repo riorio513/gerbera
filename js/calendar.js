@@ -121,8 +121,12 @@
       wide: true,
       onClose: onChange,
       render: (body) => {
+        body.classList.add('cal-modal-body');
         const tabStrip = h('div', { class: 'cal-tabs' });
-        const pane = h('div', { class: 'cal-pane' });
+        const pane = h('div', { class: 'cal-pane' });   // 高さはCSSで固定（タブを変えても小窓の大きさが変わらない）
+        const foot = h('div', { class: 'cal-foot' });   // 「追加」ボタンは常に小窓の最下部
+        body.append(tabStrip, pane, foot);
+
         function paintTabs() {
           tabStrip.replaceChildren(...TABS.map(t =>
             h('button', { class: 'cal-tab' + (t.key === activeTab ? ' on' : ''),
@@ -132,23 +136,30 @@
         function notifyHint() {
           return Gerbera.Settings && Gerbera.Settings.get().notify
             ? null
-            : h('p', { class: 'note', style: 'margin-top:4px' },
+            : h('p', { class: 'note', style: 'margin-top:6px' },
                 '※「リマインドする」を有効にするには、設定でプッシュ通知をONにしてください。');
         }
         function remindToggle(it) {
-          const on = !!it.remind;
           return h('label', { class: 'cal-remind' },
-            h('input', { type: 'checkbox', checked: on,
+            h('input', { type: 'checkbox', checked: !!it.remind,
               onchange: e => { update(it.id, { remind: e.target.checked }); } }),
             'リマインドする');
         }
         function delBtn(it) {
-          return h('button', { class: 'icon-btn danger icon-btn-sm', 'aria-label': '削除',
+          return h('button', { class: 'icon-btn danger icon-btn-sm', 'aria-label': '削除', 'data-lbl': '削除',
             onclick: () => { remove(it.id); paintPane(); } }, '🗑');
+        }
+        function setFoot(label, onAdd) {
+          foot.replaceChildren(
+            h('button', { class: 'btn btn-primary btn-full', onclick: onAdd }, label));
+        }
+        function emptyNote() {
+          return h('div', { class: 'empty', style: 'margin-top:10px' }, 'この日の登録はまだありません');
         }
 
         function paintPane() {
           pane.replaceChildren();
+          pane.scrollTop = 0;
           const mine = itemsOn(dateStr).filter(it => it.type === activeTab);
 
           if (activeTab === 'event') {
@@ -156,37 +167,34 @@
             pane.append(
               h('p', { class: 'note' },
                 `開始日から${EVENT_SPAN_DAYS}日間（${mmdd(dateStr)}〜${mmdd(addDays(dateStr, EVENT_SPAN_DAYS - 1))}）を予定として表示します。`),
-              h('div', { class: 'cal-add' }, title,
-                h('button', { class: 'btn btn-primary btn-sm', onclick: () => {
-                  if (!title.value.trim()) { toast('イベント名を入力してください'); return; }
-                  add({ type: 'event', date: dateStr, title: title.value.trim(), remind: false });
-                  title.value = ''; paintPane();
-                } }, '追加')),
+              h('div', { class: 'mt8' }, title),
               notifyHint(),
               ...mine.map(it => h('div', { class: 'cal-item' },
                 h('div', { class: 'cal-item-main' },
                   h('span', { class: 'cal-item-title' }, it.title),
                   h('span', { class: 'cal-item-sub' }, `${mmdd(it.date)}〜${mmdd(addDays(it.date, EVENT_SPAN_DAYS - 1))}`),
                   remindToggle(it)),
-                delBtn(it))));
+                delBtn(it))),
+              mine.length ? null : emptyNote());
+            setFoot('追加', () => {
+              if (!title.value.trim()) { toast('イベント名を入力してください'); return; }
+              add({ type: 'event', date: dateStr, title: title.value.trim(), remind: false });
+              paintPane();
+            });
 
           } else if (activeTab === 'plan') {
             const title = h('input', { class: 'input', placeholder: '配信企画名' });
-            const tools = reserveToolList();
-            const checks = tools.map(t => {
+            const checks = reserveToolList().map(t => {
               const cb = h('input', { type: 'checkbox', value: t.id });
               return { cb, wrap: h('label', { class: 'cal-tool-check' }, cb, t.label) };
             });
             pane.append(
-              h('div', { class: 'cal-add' }, title,
-                h('button', { class: 'btn btn-primary btn-sm', onclick: () => {
-                  if (!title.value.trim()) { toast('企画名を入力してください'); return; }
-                  const picked = checks.filter(c => c.cb.checked).map(c => c.cb.value);
-                  add({ type: 'plan', date: dateStr, title: title.value.trim(), tools: picked, remind: false });
-                  title.value = ''; checks.forEach(c => (c.cb.checked = false)); paintPane();
-                } }, '追加')),
-              h('p', { class: 'input-label', style: 'margin-top:10px' }, '当日使うツールを予約（任意）'),
-              h('div', { class: 'cal-tool-grid' }, checks.map(c => c.wrap)),
+              h('div', {}, title),
+              // 常時展開だと小窓が縦に伸びるので、たたんでおく
+              h('details', { class: 'editor', style: 'margin-top:10px' },
+                h('summary', {}, '🧰 当日使うツールを予約（任意）'),
+                h('div', { class: 'editor-body' },
+                  h('div', { class: 'cal-tool-grid' }, checks.map(c => c.wrap)))),
               notifyHint(),
               ...mine.map(it => h('div', { class: 'cal-item' },
                 h('div', { class: 'cal-item-main' },
@@ -196,54 +204,78 @@
                         it.tools.map(id => (getTool(id) || {}).name || id).join('・'))
                     : h('span', { class: 'cal-item-sub' }, 'ツール予約なし'),
                   remindToggle(it)),
-                delBtn(it))));
+                delBtn(it))),
+              mine.length ? null : emptyNote());
+            setFoot('追加', () => {
+              if (!title.value.trim()) { toast('企画名を入力してください'); return; }
+              add({ type: 'plan', date: dateStr, title: title.value.trim(),
+                tools: checks.filter(c => c.cb.checked).map(c => c.cb.value), remind: false });
+              paintPane();
+            });
 
           } else if (activeTab === 'plus') {
             const rec = plusOn(dateStr);
-            const ensure = () => plusOn(dateStr) || add({ type: 'plus', date: dateStr, plan: false, done: false, amount: 0 });
-            const tidy = () => { const r = plusOn(dateStr); if (r && !r.plan && !r.done) remove(r.id); };
+            let wantPlan = !!(rec && rec.plan);
+            let wantDone = !!(rec && rec.done);
+            let wantAmount = rec ? (+rec.amount || 0) : 0;
             const opts = [['取れなかった / まだ', 0, false], ['＋2', 2, true], ['＋4', 4, true], ['＋6', 6, true]];
+            const segEl = h('div', { class: 'seg' });
+            function paintSeg() {
+              segEl.replaceChildren(...opts.map(([lbl, amt, dn]) =>
+                h('button', { class: (wantDone ? wantAmount === amt : !dn) ? 'on' : '',
+                  onclick: () => { wantDone = dn; wantAmount = amt; paintSeg(); } }, lbl)));
+            }
+            paintSeg();
             pane.append(
               h('p', { class: 'note' },
                 'IRIAMのデイリーランクスコア（＋2／＋4／＋6）の記録です。「取る予定の日」と「取れた日」をカレンダーで見返せます。'),
-              h('label', { class: 'cal-tool-check', style: 'padding:8px 0' },
-                h('input', { type: 'checkbox', checked: !!(rec && rec.plan),
-                  onchange: e => { const r = ensure(); update(r.id, { plan: e.target.checked }); tidy(); paintPane(); } }),
+              h('label', { class: 'cal-tool-check', style: 'padding:10px 0' },
+                h('input', { type: 'checkbox', checked: wantPlan,
+                  onchange: e => { wantPlan = e.target.checked; } }),
                 'この日にプラスを取る予定'),
-              h('p', { class: 'input-label', style: 'margin-top:10px' }, '結果'),
-              h('div', { class: 'seg' },
-                opts.map(([lbl, amt, dn]) =>
-                  h('button', {
-                    class: ((rec && rec.done) ? (rec.amount === amt) : (!dn)) ? 'on' : '',
-                    onclick: () => { const r = ensure(); update(r.id, { done: dn, amount: amt }); tidy(); paintPane(); }
-                  }, lbl))));
+              h('p', { class: 'input-label', style: 'margin-top:6px' }, '結果'),
+              segEl,
+              rec
+                ? h('div', { class: 'cal-item', style: 'margin-top:12px' },
+                    h('div', { class: 'cal-item-main' },
+                      h('span', { class: 'cal-item-title' },
+                        rec.done ? `記録：＋${rec.amount || 0}` : '記録：取る予定'),
+                      h('span', { class: 'cal-item-sub' }, mmdd(rec.date))),
+                    delBtn(rec))
+                : emptyNote());
+            setFoot('追加', () => {
+              if (!wantPlan && !wantDone) {
+                const r0 = plusOn(dateStr);
+                if (r0) { remove(r0.id); toast('この日のプラス記録を消しました'); paintPane(); return; }
+                toast('「取る予定」か「結果」を選んでください'); return;
+              }
+              const r = plusOn(dateStr) || add({ type: 'plus', date: dateStr, plan: false, done: false, amount: 0 });
+              update(r.id, { plan: wantPlan, done: wantDone, amount: wantAmount });
+              paintPane();
+            });
 
           } else if (activeTab === 'birthday') {
             const who = h('input', { class: 'input', placeholder: '誰の誕生日？（名前）' });
             pane.append(
               h('p', { class: 'note' }, '毎年この日（' + mmdd(dateStr) + '）に表示されます。'),
-              h('div', { class: 'cal-add' }, who,
-                h('button', { class: 'btn btn-primary btn-sm', onclick: () => {
-                  if (!who.value.trim()) { toast('名前を入力してください'); return; }
-                  add({ type: 'birthday', date: dateStr, who: who.value.trim(), remind: false });
-                  who.value = ''; paintPane();
-                } }, '追加')),
+              h('div', { class: 'mt8' }, who),
               notifyHint(),
               ...mine.map(it => h('div', { class: 'cal-item' },
                 h('div', { class: 'cal-item-main' },
                   h('span', { class: 'cal-item-title' }, (it.who || '') + ' さん'),
                   remindToggle(it)),
-                delBtn(it))));
+                delBtn(it))),
+              mine.length ? null : emptyNote());
+            setFoot('追加', () => {
+              if (!who.value.trim()) { toast('名前を入力してください'); return; }
+              add({ type: 'birthday', date: dateStr, who: who.value.trim(), remind: false });
+              paintPane();
+            });
 
           } else { // todo
             const task = h('input', { class: 'input', placeholder: 'タスク内容' });
             pane.append(
-              h('div', { class: 'cal-add' }, task,
-                h('button', { class: 'btn btn-primary btn-sm', onclick: () => {
-                  if (!task.value.trim()) { toast('タスク内容を入力してください'); return; }
-                  add({ type: 'todo', date: dateStr, task: task.value.trim(), done: false, remind: false });
-                  task.value = ''; paintPane();
-                } }, '追加')),
+              h('div', {}, task),
               notifyHint(),
               ...mine.map(it => h('div', { class: 'cal-item' },
                 h('div', { class: 'cal-item-main' },
@@ -252,15 +284,16 @@
                       onchange: e => { update(it.id, { done: e.target.checked }); paintPane(); } }),
                     h('span', { style: it.done ? 'text-decoration:line-through;opacity:.6' : '' }, it.task)),
                   remindToggle(it)),
-                delBtn(it))));
-          }
-
-          if (!mine.length && activeTab !== 'plus') {
-            pane.append(h('div', { class: 'empty', style: 'margin-top:10px' }, 'この日の登録はまだありません'));
+                delBtn(it))),
+              mine.length ? null : emptyNote());
+            setFoot('追加', () => {
+              if (!task.value.trim()) { toast('タスク内容を入力してください'); return; }
+              add({ type: 'todo', date: dateStr, task: task.value.trim(), done: false, remind: false });
+              paintPane();
+            });
           }
         }
 
-        body.append(tabStrip, pane);
         paintTabs();
         paintPane();
       }
@@ -310,26 +343,31 @@
             ? h('span', { class: 'cal-plus' + (plus.done ? ' done' : ' plan') },
                 plus.done ? (plus.amount ? '＋' + plus.amount : '＋') : '＋')
             : null;
-          return h('button', { class: cls.join(' '), onclick: () => openDayModal(ds, paint) },
+          const inner = [
             h('span', { class: 'cal-cell-n' + (dt.getDay() === 0 ? ' sun' : dt.getDay() === 6 ? ' sat' : '') }, dt.getDate()),
             hasEvent ? h('span', { class: 'cal-band' }) : null,
             plusMark,
-            h('span', { class: 'cal-dots' }, dots));
+            h('span', { class: 'cal-dots' }, dots)
+          ];
+          // 閲覧のみ（ホーム画面）のときはタップで入力小窓を開かない
+          if (opts.readOnly) return h('span', { class: cls.join(' ') + ' cal-cell-ro' }, inner);
+          return h('button', { class: cls.join(' '), onclick: () => openDayModal(ds, paint) }, inner);
         }));
-
-      const ps = plusStats(year, month0);
-      const plusCard = h('div', { class: 'card card-soft', style: 'padding:10px 12px' },
-        h('div', { class: 'section-label', style: 'margin-bottom:4px' }, '➕ 今月のプラス'),
-        h('div', { style: 'font-size:14px;font-weight:700' },
-          `取れた ${ps.doneDays}日（合計 ＋${ps.doneTotal}）`,
-          h('span', { style: 'color:var(--text-sub);font-weight:500' }, `　／　取る予定 ${ps.planDays}日`)));
 
       const parts = [head, dow, grid,
         h('div', { class: 'cal-legend' },
           legend('dot-plan', '企画'), legend('dot-bd', '誕生日'), legend('dot-todo', 'Todo'),
           h('span', { class: 'cal-legend-i' }, h('span', { class: 'cal-legend-band' }), 'イベント'),
-          h('span', { class: 'cal-legend-i' }, h('span', { class: 'cal-plus done', style: 'position:static' }, '＋'), 'プラス')),
-        plusCard];
+          h('span', { class: 'cal-legend-i' }, h('span', { class: 'cal-plus done', style: 'position:static' }, '＋'), 'プラス'))];
+
+      if (opts.showPlusSummary) {
+        const ps = plusStats(year, month0);
+        parts.push(h('div', { class: 'card card-soft', style: 'padding:10px 12px' },
+          h('div', { class: 'section-label', style: 'margin-bottom:4px' }, '➕ 今月のプラス'),
+          h('div', { style: 'font-size:14px;font-weight:700' },
+            `取れた ${ps.doneDays}日（合計 ＋${ps.doneTotal}）`,
+            h('span', { style: 'color:var(--text-sub);font-weight:500' }, `　／　取る予定 ${ps.planDays}日`))));
+      }
 
       if (opts.showMonthList) {
         const monthItems = all()
@@ -358,7 +396,7 @@
 
   function renderCalendar(view) {
     view.replaceChildren(h('h1', { class: 'screen-title' }, 'カレンダー'), h('div', { id: 'calBody' }));
-    mountCalendar(document.getElementById('calBody'), { showMonthList: true });
+    mountCalendar(document.getElementById('calBody'), { showMonthList: true, showPlusSummary: true });
   }
   function legend(dotCls, label) {
     return h('span', { class: 'cal-legend-i' }, h('i', { class: 'cal-dot ' + dotCls }), label);
@@ -379,23 +417,36 @@
         h('div', { class: 'badge' }, '今日の企画'),
         h('div', { style: 'font-size:17px;font-weight:900;margin-top:4px' }, plan.title)));
     }
-    const toolIds = (plan && plan.tools) || [];
+    /* メモはどの企画でも使うので、予約に関係なく常に用意する */
+    const openTool = id => {
+      if (Gerbera.openCommonTool) Gerbera.openCommonTool(id);
+      else location.hash = 'tool/' + id;
+    };
+    const toolIds = ((plan && plan.tools) || []).filter(id => id !== 'memo');
+
+    kids.push(h('p', { class: 'note', style: 'margin:2px 0 10px' }, '予約したツールを表示しています。'));
+
+    const memoTool = getTool('memo');
+    if (memoTool) {
+      kids.push(h('button', { class: 'btn btn-ghost planday-btn planday-memo', onclick: () => openTool('memo') },
+        h('span', { style: 'font-size:22px' }, memoTool.icon),
+        h('span', {}, memoTool.name)));
+    }
+
     if (toolIds.length) {
-      kids.push(h('p', { class: 'note', style: 'margin:2px 0 10px' },
-        'カレンダーの「企画」で予約したツールです。この一覧は今日だけ表示されます。'));
       kids.push(h('div', { class: 'planday-grid' },
         toolIds.map(id => {
           const t = getTool(id);
           if (!t) return null;
-          return h('button', { class: 'btn btn-ghost planday-btn', onclick: () => { location.hash = 'tool/' + id; } },
+          return h('button', { class: 'btn btn-ghost planday-btn', onclick: () => openTool(id) },
             h('span', { style: 'font-size:22px' }, t.icon),
             h('span', {}, t.name));
         })));
     } else {
       kids.push(h('div', { class: 'empty' },
         plan
-          ? 'この企画にはツールが予約されていません。カレンダーの「企画」からツールを選べます。'
-          : '今日の予約ツールはありません。カレンダーの「企画」で企画名とツールを登録できます。'));
+          ? 'この企画にはメモ以外のツールが予約されていません。カレンダーの「企画」からツールを選べます。'
+          : '今日の企画は登録されていません。カレンダーの「企画」で企画名とツールを登録できます。'));
       kids.push(h('button', { class: 'btn btn-primary btn-full mt12', onclick: () => { location.hash = 'calendar'; } },
         'カレンダーを開く'));
     }

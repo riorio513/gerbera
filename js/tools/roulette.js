@@ -145,7 +145,7 @@
           h('div', { class: 'list-row' },
             h('input', { class: 'input grow', value: it.label,
               oninput: e => { it.label = e.target.value; save(); buildWheel(); } }),
-            h('button', { class: 'icon-btn danger', 'aria-label': 'この項目を削除',
+            h('button', { class: 'icon-btn danger', 'aria-label': 'この項目を削除', 'data-lbl': '削除',
               onclick: () => {
                 items = items.filter(x => x.id !== it.id);
                 save();

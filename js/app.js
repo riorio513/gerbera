@@ -54,7 +54,7 @@
     { label: 'ツール',   icon: '🧰', sheet: true,        match: () => sheetMode === 'list' || sheetMode === 'listTool' },
     { label: '企画',     icon: '🎬', hash: 'plans',     match: p => p === 'plans' || p === 'plan' },
     { label: '配信管理', icon: '📊', hash: 'kanri',     match: p => p === 'kanri' || p === 'calendar' || p === 'planday' },
-    { label: 'メモ',     icon: '📝', hash: 'tool/memo', match: (p, full) => full === 'tool/memo' },
+    { label: 'メモ',     icon: '📝', memoSheet: true, match: () => sheetMode === 'memo' },
     { label: 'AI相談',   icon: '🤖', hash: 'ai',        match: p => p === 'ai' }
   ];
 
@@ -117,14 +117,17 @@
 
     /* 今日の企画 */
     const plan = Cal ? Cal.todayPlan() : null;
+    const tapWord = (window.matchMedia && matchMedia('(pointer: coarse)').matches) ? 'タップ' : 'クリック';
     const planCard = h('button', { class: 'dash-plan', onclick: () => { location.hash = 'planday'; } },
-      h('span', { class: 'dash-cell-label' }, '今日の企画'),
+      h('span', { class: 'dash-plan-head' },
+        h('span', { class: 'dash-cell-label' }, '今日の企画'),
+        h('span', { class: 'dash-plan-hint' }, `${tapWord}することで、予約したツール一覧が表示されます`)),
       plan
         ? h('span', { class: 'dash-plan-name' }, plan.title,
             (plan.tools && plan.tools.length) ? h('span', { class: 'dash-plan-tools' }, '　予約ツール ' + plan.tools.length + '件 ›') : h('span', { class: 'dash-plan-tools' }, ' ›'))
         : h('span', { class: 'dash-plan-none' }, '今日は企画配信の予定はありません'));
 
-    /* カレンダー（配信管理で登録した予定・プラス記録がそのまま反映される） */
+    /* カレンダー（配信管理で登録した予定・プラス記録の閲覧のみ。入力は配信管理から） */
     const calBox = h('div', { class: 'home-cal' });
 
     view.replaceChildren(
@@ -133,7 +136,7 @@
       h('div', { class: 'home-panel' }, noticePanel, remindCard, planCard),
       calBox
     );
-    if (Cal && Cal.mount) Cal.mount(calBox, { showMonthList: false });
+    if (Cal && Cal.mount) Cal.mount(calBox, { showMonthList: false, showPlusSummary: false, readOnly: true });
 
     /* 初回表示時に一度だけリマインドのトースト */
     if (!remindShown && S.notify && Cal) {
@@ -360,11 +363,11 @@
   function unlockSheetHeight() { sheetBody.style.height = ''; }
 
   /* 単体ツールを小窓で開く（スピードダイヤル・他ツールからの呼び出し） */
-  function openSheet(id) {
+  function openSheet(id, mode) {
     const t = getTool(id);
     if (!t) return;
     clearSheetTool();
-    sheetMode = 'tool';
+    sheetMode = mode || 'tool';
     sheetBack.hidden = true;
     sheetIcon.textContent = t.icon;
     sheetTitle.textContent = t.name;
@@ -467,6 +470,10 @@
             (sheetMode === 'list' || sheetMode === 'listTool') ? closeSheet() : openToolSheet();
             return;
           }
+          if (item.memoSheet) {
+            (sheetMode === 'memo') ? closeSheet() : openSheet('memo', 'memo');
+            return;
+          }
           if (!sheet.hidden) closeSheet();
           location.hash = item.hash;
         } },
@@ -476,9 +483,13 @@
   function paintNav(full) {
     const p0 = full.split('/')[0];
     const toolSheetOpen = sheetMode === 'list' || sheetMode === 'listTool';
+    const memoSheetOpen = sheetMode === 'memo';
     nav.querySelectorAll('.bn-item').forEach((el, i) => {
       const item = NAV[i];
-      const on = toolSheetOpen ? !!item.sheet : !!item.match(p0, full);
+      let on;
+      if (memoSheetOpen) on = !!item.memoSheet;
+      else if (toolSheetOpen) on = !!item.sheet;
+      else on = !!item.match(p0, full);
       el.classList.toggle('active', on);
     });
   }

@@ -20,6 +20,12 @@
         running: this.running, endAt: this.endAt
       });
     },
+    /* 画面を開いていないと終了に気づけないため、音とトーストに加えてOS通知も出す。
+       通知の許可が無い環境では、これまで通り音とトーストだけになる。 */
+    _announceEnd() {
+      const label = fmtDur(this.duration);
+      if (Gerbera.Push) Gerbera.Push.notifyNow('⏰ タイマー終了', `${label}のタイマーが終わりました`);
+    },
     _tickStart() {
       clearInterval(this._timer);
       this._timer = setInterval(() => {
@@ -32,6 +38,7 @@
           this.persist();
           chime();
           toast('⏰ タイマーが終了しました！');
+          this._announceEnd();
           this.ev.emit('state');
         } else {
           this.ev.emit('tick');
@@ -42,6 +49,7 @@
       this.duration = Math.max(0, Math.floor(sec));
       this.remainMs = this.duration * 1000;
       this.finished = false;
+      if (Gerbera.Push) Gerbera.Push.cancelScheduled();
       this.persist();
       this.ev.emit('state');
     },
@@ -54,6 +62,9 @@
       this.finished = false;
       this.endAt = Date.now() + this.remainMs;
       this._tickStart();
+      if (Gerbera.Push) {
+        Gerbera.Push.scheduleAt(this.endAt, '⏰ タイマー終了', `${fmtDur(this.duration)}のタイマーが終わりました`);
+      }
       this.persist();
       this.ev.emit('state');
     },
@@ -62,6 +73,7 @@
       this.remainMs = Math.max(0, this.endAt - Date.now());
       this.running = false;
       clearInterval(this._timer);
+      if (Gerbera.Push) Gerbera.Push.cancelScheduled();
       this.persist();
       this.ev.emit('state');
     },
@@ -70,6 +82,7 @@
       this.finished = false;
       this.remainMs = this.duration * 1000;
       clearInterval(this._timer);
+      if (Gerbera.Push) Gerbera.Push.cancelScheduled();
       this.persist();
       this.ev.emit('state');
     },
@@ -113,7 +126,15 @@
       const display = h('div', { class: 'display-huge' });
       const startBtn = h('button', { class: 'btn btn-primary btn-big', style: 'min-width:132px',
         onclick: () => T.running ? T.pause() : T.start() });
-      const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => T.reset() }, 'リセット');
+      const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => {
+        const midway = T.remainMs > 0 && T.remainMs !== T.duration * 1000;
+        if (T.running || midway) {
+          Gerbera.confirmDialog(`計測中のタイマー（残り ${fmtClock(T.remainMs, false)}）をリセットしますか？`,
+            () => T.reset(), { title: 'リセットします', okLabel: 'リセットする' });
+          return;
+        }
+        T.reset();
+      } }, 'リセット');
       const postBtn = h('button', { class: 'btn btn-lav btn-full mt12',
         onclick: () => openX(`【タイマー】\nただいまの記録は${fmtClock(T.remainMs, false)}でした！`) }, '🐦 記録をXへポスト');
 
@@ -142,7 +163,8 @@
       function paintPresets() {
         presetRow.replaceChildren(
           ...presets.map(p =>
-            h('button', { class: 'chip lav', onclick: () => { T.reset && T.pause(); T.setDuration(p.sec); fillInputs(); } },
+            h('button', { class: 'chip lav',
+              onclick: () => { T.pause(); T.setDuration(p.sec); fillInputs(); T.start(); } },
               fmtDur(p.sec),
               h('span', { class: 'chip-x', 'aria-label': 'このプリセットを削除',
                 onclick: e => {

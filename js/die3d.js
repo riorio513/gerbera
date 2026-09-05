@@ -148,7 +148,11 @@
           cube.addEventListener('transitionend', onEnd);
           const fallback = setTimeout(finish, dur + 150);
           inst._cancelTimer = fallback;
-          inst._cancelListener = () => cube.removeEventListener('transitionend', onEnd);
+          // destroy()で中断したときも必ず解決させる（待ち続けると呼び出し側が固まる）
+          inst._cancelListener = () => {
+            cube.removeEventListener('transitionend', onEnd);
+            if (!done) { done = true; resolve(); }
+          };
         });
       },
       setStatic(value) {

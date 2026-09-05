@@ -18,13 +18,30 @@ window.Gerbera = (function () {
         return def;
       }
     },
+    /* 保存できたら true。容量超過などで失敗したときは黙って捨てず、
+       画面に知らせる（書いたメモが消えたことに気づけないため）。
+       同じ失敗を連呼しないよう、知らせるのは一定間隔に1回だけ。 */
     set(key, val) {
-      try { localStorage.setItem(PREFIX + key, JSON.stringify(val)); } catch (e) { /* 容量超過など */ }
+      try {
+        localStorage.setItem(PREFIX + key, JSON.stringify(val));
+        return true;
+      } catch (e) {
+        warnSaveFailed();
+        return false;
+      }
     },
     remove(key) {
       try { localStorage.removeItem(PREFIX + key); } catch (e) {}
     }
   };
+
+  let lastSaveWarn = 0;
+  function warnSaveFailed() {
+    const now = Date.now();
+    if (now - lastSaveWarn < 20000) return;
+    lastSaveWarn = now;
+    toast('⚠️ 保存できませんでした。端末の空き容量を確認してください');
+  }
 
   /* ---- ツールレジストリ ----
      tool = { id, name, icon, mount(rootEl) => cleanup関数(任意) } */

@@ -63,11 +63,14 @@
 
       const countVal = h('span', { class: 'stepper-val' }, st.count);
       const setCount = d => {
+        if (uiState === 'rolling') return;
         st.count = Math.min(10, Math.max(1, st.count + d));
         countVal.textContent = st.count;
         save();
         buildStage();
       };
+      const minusBtn = h('button', { onclick: () => setCount(-1), 'aria-label': '個数を減らす' }, '−');
+      const plusBtn = h('button', { onclick: () => setCount(1), 'aria-label': '個数を増やす' }, '＋');
 
       /* ---- ロールアニメーションの舞台（サイコロ本体はここにだけ存在する） ---- */
       const rollStage = h('div', { class: 'dice-roll-stage' });
@@ -81,13 +84,20 @@
       }
 
       /* 面数・個数が変わったら舞台を作り直す（ロール中は変更UI自体を無効化しているため
-         多重実行の心配はない） */
+         多重実行の心配はない）。
+         前の面数・個数で出した目をそのまま残すと、6面の「5」を100面の結果として
+         ポストできてしまうため、作り直しのタイミングで結果も消す。 */
       function reducedMotion() {
         return typeof Gerbera.prefersReducedMotion === 'function' && Gerbera.prefersReducedMotion();
       }
 
       function buildStage() {
         clearActiveAnimations();
+        uiState = 'idle';
+        lastFinals = null;
+        paintResult();
+        postBtn.hidden = true;
+        postImgBtn.hidden = true;
         rollStage.replaceChildren();
         if (!reducedMotion() && (st.faces === 6 || st.faces === 4)) {
           const slotClass = st.faces === 6 ? 'die3d-slot' : 'die4-slot';
@@ -108,11 +118,19 @@
         }
       }
 
+      /* ロール中は面数・個数の変更をまとめて止める。個数だけ生きていると
+         転がっている最中に舞台が作り直され、ロールが終わらなくなる。 */
+      function lockControls(on) {
+        rollBtn.disabled = on;
+        facesSel.disabled = on;
+        minusBtn.disabled = on;
+        plusBtn.disabled = on;
+      }
+
       function roll() {
         if (uiState === 'rolling') return; // 多重実行防止
         uiState = 'rolling';
-        rollBtn.disabled = true;
-        facesSel.disabled = true;
+        lockControls(true);
         postBtn.hidden = true;
         postImgBtn.hidden = true;
 
@@ -129,8 +147,7 @@
           paintResult();
           postBtn.hidden = false;
           postImgBtn.hidden = false;
-          rollBtn.disabled = false;
-          facesSel.disabled = false;
+          lockControls(false);
           return;
         }
 
@@ -160,8 +177,7 @@
           paintResult();
           postBtn.hidden = false;
           postImgBtn.hidden = false;
-          rollBtn.disabled = false;
-          facesSel.disabled = false;
+          lockControls(false);
         });
       }
 
@@ -176,10 +192,7 @@
               h('span', { class: 'input-label', style: 'margin:0' }, '面数'), facesSel),
             h('div', { class: 'hstack' },
               h('span', { class: 'input-label', style: 'margin:0' }, '個数'),
-              h('div', { class: 'stepper' },
-                h('button', { onclick: () => setCount(-1), 'aria-label': '個数を減らす' }, '−'),
-                countVal,
-                h('button', { onclick: () => setCount(1), 'aria-label': '個数を増やす' }, '＋')))),
+              h('div', { class: 'stepper' }, minusBtn, countVal, plusBtn))),
           stageWrap,
           rollBtn)
       );

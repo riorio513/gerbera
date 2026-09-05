@@ -24,9 +24,15 @@
     document.body.removeChild(ta);
   }
   function autoGrow(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+  /* 何日ぶんかたまると時:分だけでは先週のメモと見分けがつかないので、
+     今日以外は日付も添える。 */
   function fmtTime(ts) {
     const d = new Date(ts);
-    return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    const hm = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) return '今日 ' + hm;
+    const y = d.getFullYear() === now.getFullYear() ? '' : d.getFullYear() + '/';
+    return `${y}${d.getMonth() + 1}/${d.getDate()} ${hm}`;
   }
   function todayISO() {
     return Gerbera.Calendar ? Gerbera.Calendar.todayISO()
@@ -98,7 +104,11 @@
                     h('div', { class: 'hstack', style: 'gap:6px' },
                       h('button', { class: 'icon-btn', 'aria-label': 'コピー', 'data-lbl': 'コピー', onclick: () => copyText(n.text) }, '📋'),
                       h('button', { class: 'icon-btn danger', 'aria-label': '削除', 'data-lbl': '削除',
-                        onclick: () => { notes = notes.filter(x => x.id !== n.id); save(); render(); } }, '🗑'))))
+                        onclick: () => {
+                          confirmDialog('このメモを削除しますか？', () => {
+                            notes = notes.filter(x => x.id !== n.id); save(); render();
+                          });
+                        } }, '🗑'))))
               : [h('div', { class: 'empty' }, '配信中に気づいたことやアイデアを、ここに気軽にメモできます🗒️')]));
         }
         render();
@@ -127,11 +137,12 @@
           const m = allMeta()[name] || {};
           return { blocked: !!m.blocked, muted: !!m.muted, warned: !!m.warned, danger: !!m.danger, visits: m.visits || [] };
         }
+        /* 登録の削除は「このリスナーを削除」だけが行う。
+           かつてフラグ・来訪がすべて空になった記録を自動で消していたが、
+           名前だけ登録した人のフラグを立てて戻すと登録ごと消えていたためやめた。 */
         function setMeta(name, patch) {
           const store = allMeta();
           store[name] = Object.assign(getMeta(name), patch);
-          const m = store[name];
-          if (!m.blocked && !m.muted && !m.warned && !m.danger && (!m.visits || !m.visits.length)) delete store[name];
           Store.set(META, store);
         }
         function stampToday(name) {
@@ -239,6 +250,7 @@
                 rowsAll().length ? '条件に合うリスナーはいません' : 'まだ登録がありません。「＋ 新規」から追加できます👤'));
               return;
             }
+            const today = todayISO();
             rowsEl.replaceChildren(...rows.map(r => {
               const sub = [];
               if (r.meta.visits.length) sub.push(`来訪${r.meta.visits.length}`);
@@ -247,13 +259,25 @@
               const marks = [];
               if (r.meta.danger) marks.push(h('span', { class: 'lm-chip danger' }, '🚨'));
               FLAGS.forEach(f => { if (r.meta[f.key]) marks.push(h('span', { class: 'lm-chip' }, f.icon)); });
-              return h('button', { class: 'lmr' + (r.meta.danger ? ' lmr-danger' : ''),
-                onclick: () => { selected = r.name; view = 'detail'; render(); } },
-                h('span', { class: 'lmr-main' },
-                  h('span', { class: 'lmr-name' }, r.name || '名前未設定'),
-                  sub.length ? h('span', { class: 'lmr-sub' }, sub.join('・')) : null),
-                marks.length ? h('span', { class: 'lmr-marks' }, marks) : null,
-                h('span', { class: 'lmr-chev' }, '›'));
+
+              /* 来訪の記録は配信を見ながら押すので、詳細を開かずこの行だけで完結させる */
+              const came = r.last === today;
+              const stampBtn = h('button', {
+                class: 'lmr-stamp-btn' + (came ? ' done' : ''),
+                'aria-label': `${r.name || 'この人'}の来訪を今日ぶん記録する`,
+                onclick: () => preserveScroll(() => { stampToday(r.name); paintRows(); })
+              }, h('span', { class: 'lmr-stamp-ico' }, came ? '✓' : '＋'),
+                 h('span', {}, came ? '記録済' : '今日来た'));
+
+              return h('div', { class: 'lmr' + (r.meta.danger ? ' lmr-danger' : '') },
+                h('button', { class: 'lmr-open',
+                  onclick: () => { selected = r.name; view = 'detail'; render(); } },
+                  h('span', { class: 'lmr-main' },
+                    h('span', { class: 'lmr-name' }, r.name || '名前未設定'),
+                    sub.length ? h('span', { class: 'lmr-sub' }, sub.join('・')) : null),
+                  marks.length ? h('span', { class: 'lmr-marks' }, marks) : null,
+                  h('span', { class: 'lmr-chev' }, '›')),
+                stampBtn);
             }));
           }
           paintRows();
@@ -285,7 +309,6 @@
                     save();
                   } else {
                     setMeta(nm, {}); // 名前だけでも一覧に残す
-                    const store = allMeta(); store[nm] = getMeta(nm); Store.set(META, store);
                   }
                   ctl.close();
                   selected = nm; view = 'detail'; render();

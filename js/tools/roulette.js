@@ -54,12 +54,15 @@
           const mid = i * seg + seg / 2;
           const rad = (mid - 90) * Math.PI / 180;
           const tx = 110 + 66 * Math.cos(rad), ty = 110 + 66 * Math.sin(rad);
-          const label = it.label.length > 6 ? it.label.slice(0, 6) + '…' : it.label;
+          /* 罰ゲームやリスナー名は6文字を超えることが多いので、項目が少ないときは
+             長めに出し、そのぶん文字を小さくして回転中でも読めるようにする */
+          const maxChars = n <= 3 ? 12 : n <= 5 ? 10 : n <= 8 ? 8 : 6;
+          const label = it.label.length > maxChars ? it.label.slice(0, maxChars) + '…' : it.label;
           const t = document.createElementNS(SVGNS, 'text');
           t.setAttribute('x', tx); t.setAttribute('y', ty);
           t.setAttribute('text-anchor', 'middle');
           t.setAttribute('dominant-baseline', 'middle');
-          t.setAttribute('font-size', n > 8 ? '9' : '11');
+          t.setAttribute('font-size', label.length > 8 ? '8' : label.length > 6 ? '9' : (n > 8 ? '9' : '11'));
           t.setAttribute('font-weight', '700');
           t.setAttribute('fill', '#43324E');
           t.setAttribute('transform', `rotate(${mid} ${tx} ${ty})`);
@@ -95,9 +98,15 @@
           if (items.length < 2) { toast('項目を2つ以上追加してね'); return; }
           spinning = true;
           spinBtn.disabled = true;
+          /* 回っている間の項目編集は当たりの表示とかみ合わないので閉じて止める */
+          editor.open = false;
+          editor.classList.add('editor-locked');
           resultArea.replaceChildren();
           const n = items.length, seg = 360 / n;
           const winner = Math.floor(Math.random() * n);
+          /* 回転中に項目が編集・削除されても結果が出せるよう、当たりの名前は
+             この時点で控えておく（あとで items[winner] を引き直さない） */
+          const winnerLabel = items[winner].label;
           const center = winner * seg + seg / 2;
           const jitter = (Math.random() - 0.5) * seg * 0.6;
           const target = ((360 - center - jitter) % 360 + 360) % 360;
@@ -111,13 +120,14 @@
             clearTimeout(fallback);
             spinning = false;
             spinBtn.disabled = false;
-            lastWinnerLabel = items[winner].label;
+            editor.classList.remove('editor-locked');
+            lastWinnerLabel = winnerLabel;
             postBtn.hidden = false;
             postImgBtn.hidden = false;
             resultArea.replaceChildren(
               h('div', { class: 'result-card pop' },
                 h('div', { class: 'result-sub' }, '結果は…'),
-                h('div', { class: 'result-main' }, items[winner].label)));
+                h('div', { class: 'result-main' }, winnerLabel)));
           };
           const onEnd = () => finish();
           rotor.addEventListener('transitionend', onEnd);
@@ -156,6 +166,13 @@
       }
       renderEditor();
 
+      const editor = h('details', { class: 'editor' },
+        h('summary', {}, '⚙️ 項目を編集する'),
+        h('div', { class: 'editor-body' },
+          h('div', { class: 'hstack' }, addInput,
+            h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
+          h('div', { class: 'mt8' }, editList)));
+
       root.append(
         h('div', { class: 'card' },
           resultArea,
@@ -163,12 +180,7 @@
           h('div', { class: 'wheel-wrap mt12' }, svg),
           emptyMsg,
           spinBtn,
-          h('details', { class: 'editor' },
-            h('summary', {}, '⚙️ 項目を編集する'),
-            h('div', { class: 'editor-body' },
-              h('div', { class: 'hstack' }, addInput,
-                h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
-              h('div', { class: 'mt8' }, editList))))
+          editor)
       );
     }
   });

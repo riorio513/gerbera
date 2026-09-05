@@ -116,6 +116,9 @@
         }
         postBtn.hidden = false;
         postImgBtn.hidden = false;
+        /* 続けて別の人を引くとき、前の人の名前を毎回消さずに済むようにする
+           （結果カードには引いた人の名前が残るので、消えても分からなくならない） */
+        nameInput.value = '';
       }
 
       const drawBtn = h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '🎁 ガチャを回す');

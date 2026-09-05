@@ -97,8 +97,51 @@
     } catch (e) { return null; }
   }
 
+  const TIMER_TAG = 'gerbera-timer-end';
+
   const Push = {
     supported() { return 'Notification' in window && 'serviceWorker' in navigator; },
+    granted() { return 'Notification' in window && Notification.permission === 'granted'; },
+
+    /* 今すぐOS通知を出す（タイマー終了など、その場で起きたことを知らせる用）。
+       許可が無いときは何もしない＝アプリ内の音とトーストだけが残る。 */
+    async notifyNow(title, body) {
+      if (!this.granted()) return false;
+      try {
+        const reg = navigator.serviceWorker ? await navigator.serviceWorker.ready : null;
+        if (!reg) return false;
+        await reg.showNotification(title, {
+          body, tag: TIMER_TAG, renotify: true, icon: 'icon.svg', badge: 'icon.svg',
+          vibrate: [200, 100, 200], data: { url: './' }
+        });
+        return true;
+      } catch (e) { return false; }
+    },
+
+    /* 終了時刻を予約しておく（対応ブラウザのみ）。
+       IRIAMアプリに切り替えてガーベラが止められても、この予約なら通知が出る。 */
+    async scheduleAt(when, title, body) {
+      await this.cancelScheduled();
+      if (!this.granted()) return false;
+      if (!('showTrigger' in Notification.prototype) || !window.TimestampTrigger) return false;
+      if (when <= Date.now()) return false;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(title, {
+          body, tag: TIMER_TAG, icon: 'icon.svg', badge: 'icon.svg',
+          showTrigger: new TimestampTrigger(when), data: { url: './' }
+        });
+        return true;
+      } catch (e) { return false; }
+    },
+    async cancelScheduled() {
+      try {
+        const reg = navigator.serviceWorker ? await navigator.serviceWorker.ready : null;
+        if (!reg) return;
+        const list = await reg.getNotifications({ tag: TIMER_TAG, includeTriggered: true });
+        list.forEach(n => n.close());
+      } catch (e) {}
+    },
 
     /* 設定でトグルON時に呼ぶ。許可が取れたら true */
     async enable() {

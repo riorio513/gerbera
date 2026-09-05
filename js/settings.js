@@ -10,6 +10,7 @@
   const { Store, h, toast, emitter, modal } = Gerbera;
   const KEY = 'settings';
   const DEFAULTS = {
+    liverName: '',       // ホームの「おかえりなさい、〇〇さん」に出す名前
     debutDate: null,     // 'YYYY-MM-DD'
     debutLocked: false,
     notify: false,       // アプリ内リマインド（OS通知ではない）
@@ -111,16 +112,66 @@
     return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
   }
 
-  /* ---------- デビュー日の設定フロー ---------- */
-  function openDebutFlow() {
-    if (data.debutLocked) {
-      toast('デビューした日は、あとから変更できません');
-      return;
+  function refreshSettingsScreen() {
+    if (location.hash.replace(/^#\/?/, '').split('/')[0] === 'settings') {
+      renderSettings(document.getElementById('view'));
     }
+  }
+
+  /* ---------- 名前（ホームの表示） ---------- */
+  function openNameFlow() {
+    modal({
+      title: '名前',
+      render: (body, ctl) => {
+        const input = h('input', { class: 'input', maxlength: 20,
+          placeholder: 'ホームで呼ばれる名前', value: data.liverName || '' });
+        const submit = () => {
+          Settings.set({ liverName: input.value.trim().slice(0, 20) });
+          ctl.close();
+          toast('名前を設定しました');
+          refreshSettingsScreen();
+        };
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+        body.append(
+          h('p', { class: 'note', style: 'margin-bottom:10px' },
+            'ホームの「おかえりなさい、〇〇さん」に表示されます。空にすると「〇〇」に戻ります。'),
+          input,
+          h('button', { class: 'btn btn-primary btn-full mt16', onclick: submit }, '保存'));
+        setTimeout(() => input.focus(), 60);
+      }
+    });
+  }
+
+  /* ---------- デビュー日の設定フロー ---------- */
+  /* 一度設定するとロックされる項目だが、日付を打ち間違えたまま直せないと
+     「◯日目」がずっと合わなくなるため、確認を重ねたうえでの修正だけは通す。 */
+  function openDebutLocked() {
     modal({
       title: 'デビューした日',
       render: (body, ctl) => {
-        const picker = h('input', { class: 'input', type: 'date', max: todayISO() });
+        body.append(
+          h('p', { style: 'font-size:15px;font-weight:700;text-align:center;margin-bottom:6px' },
+            jpDate(data.debutDate)),
+          h('p', { class: 'note', style: 'line-height:1.8' },
+            'この項目は一度設定すると変更できません。日付を間違えて登録してしまった場合のみ、下から修正できます。'),
+          h('button', { class: 'btn btn-ghost btn-full mt16', onclick: () => {
+            ctl.close();
+            openDebutPicker(true);
+          } }, '間違えたので修正する'),
+          h('button', { class: 'btn btn-primary btn-full mt8', onclick: ctl.close }, '閉じる'));
+      }
+    });
+  }
+  function openDebutFlow() {
+    if (data.debutLocked) { openDebutLocked(); return; }
+    openDebutPicker(false);
+  }
+  function openDebutPicker(isFix) {
+    modal({
+      title: isFix ? 'デビューした日を修正' : 'デビューした日',
+      render: (body, ctl) => {
+        const picker = h('input', { class: 'input', type: 'date', max: todayISO(),
+          value: isFix && data.debutDate ? data.debutDate : null });
         body.append(
           h('p', { class: 'note', style: 'margin-bottom:10px' },
             '配信をはじめた日を選んでください。'),
@@ -130,12 +181,12 @@
           h('button', { class: 'btn btn-primary btn-full mt16', onclick: () => {
             if (!picker.value) { toast('日付を選んでください'); return; }
             ctl.close();
-            confirmDebut(picker.value);
+            confirmDebut(picker.value, isFix);
           } }, 'OK'));
       }
     });
   }
-  function confirmDebut(iso) {
+  function confirmDebut(iso, isFix) {
     modal({
       title: '最終確認',
       dismissable: true,
@@ -145,14 +196,16 @@
             jpDate(iso)),
           h('p', { style: 'text-align:center' }, 'この日にちでよろしいですか？'),
           h('p', { class: 'warn', style: 'margin:12px 0 0;line-height:1.7' },
-            '※ OKを押すと、この設定項目は変更できなくなります。'),
+            isFix
+              ? '※ OKを押すと、この日にちに置きかわり、ふたたび変更できなくなります。'
+              : '※ OKを押すと、この設定項目は変更できなくなります。'),
           h('div', { class: 'hstack mt16', style: 'gap:10px' },
             h('button', { class: 'btn btn-ghost grow', onclick: ctl.close }, 'もどる'),
             h('button', { class: 'btn btn-primary grow', onclick: () => {
               Settings.set({ debutDate: iso, debutLocked: true });
               ctl.close();
-              toast('デビューした日を設定しました');
-              if (location.hash.replace(/^#\/?/, '').split('/')[0] === 'settings') renderSettings(document.getElementById('view'));
+              toast(isFix ? 'デビューした日を修正しました' : 'デビューした日を設定しました');
+              refreshSettingsScreen();
             } }, 'OK')));
       }
     });
@@ -175,9 +228,17 @@
           '　（※この項目はあとから変更できません）')),
       data.debutLocked ? h('span', { class: 'set-row-lockmark' }, '🔒') : h('span', { class: 'set-row-chev' }, '›'));
 
+    const nameRow = h('button', { class: 'set-row set-row-link', onclick: openNameFlow },
+      h('div', { class: 'set-row-main' },
+        h('span', { class: 'set-row-title' }, '名前'),
+        h('span', { class: 'set-row-sub' },
+          data.liverName ? `${data.liverName} さん` : '未設定（ホームでは「〇〇さん」と表示されます）')),
+      h('span', { class: 'set-row-chev' }, '›'));
+
     view.replaceChildren(
       h('h1', { class: 'screen-title' }, '設定'),
       h('div', { class: 'set-list' },
+        nameRow,
         debutRow,
         notifyRow(),
         toggleRow('ダークモード', 'dark'),

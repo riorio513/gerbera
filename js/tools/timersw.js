@@ -3,7 +3,7 @@
    計測エンジンは timer.js / stopwatch.js のグローバル単一エンジンを共有する。
    画面を移動しても計測は続き、再読込しても復元される。 */
 (function () {
-  const { register, Store, h, uid, toast, fmtClock, openX } = Gerbera;
+  const { register, Store, h, uid, toast, fmtClock, openX, confirmDialog } = Gerbera;
   const KEY_MODE = 'timersw.mode';
   const KEY_P = 'timer.presets';
 
@@ -50,7 +50,17 @@
         const display = h('div', { class: 'display-huge' });
         const startBtn = h('button', { class: 'btn btn-primary btn-big', style: 'min-width:132px',
           onclick: () => (T.running ? T.pause() : T.start()) });
-        const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => T.reset() }, 'リセット');
+        /* スタートのすぐ隣にあり、画面を見ずに押す場面が多いので、
+           計測が進んでいるときだけ確認を挟む（止まっているときは即リセット）。 */
+        const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => {
+          const midway = T.remainMs > 0 && T.remainMs !== T.duration * 1000;
+          if (T.running || midway) {
+            confirmDialog(`計測中のタイマー（残り ${fmtClock(T.remainMs, false)}）をリセットしますか？`,
+              () => T.reset(), { title: 'リセットします', okLabel: 'リセットする' });
+            return;
+          }
+          T.reset();
+        } }, 'リセット');
         const postBtn = h('button', { class: 'btn btn-lav btn-full mt12',
           onclick: () => openX(`【タイマー】\nただいまの記録は${fmtClock(T.remainMs, false)}でした！`) }, '🐦 記録をXへポスト');
 
@@ -74,8 +84,10 @@
         const presetRow = h('div', { class: 'chip-wrap', style: 'justify-content:center' });
         function paintPresets() {
           presetRow.replaceChildren(
+            /* 配信中は「押したら始まってほしい」ので、時間をセットしてそのまま走らせる */
             ...presets.map(p =>
-              h('button', { class: 'chip lav', onclick: () => { T.pause(); T.setDuration(p.sec); fillInputs(); } },
+              h('button', { class: 'chip lav',
+                onclick: () => { T.pause(); T.setDuration(p.sec); fillInputs(); T.start(); } },
                 fmtDur(p.sec),
                 h('span', { class: 'chip-x', 'aria-label': 'このプリセットを削除',
                   onclick: e => { e.stopPropagation(); presets = presets.filter(x => x.id !== p.id); savePresets(); paintPresets(); } }, '×'))),
@@ -104,10 +116,10 @@
             display,
             h('div', { class: 'hstack mt12', style: 'justify-content:center' }, startBtn, resetBtn),
             h('div', { class: 'mt12' }, setRow),
-            postBtn,
-            h('details', { class: 'editor', style: 'margin-top:10px;text-align:left' },
-              h('summary', {}, '💾 プリセット'),
-              h('div', { class: 'editor-body' }, presetRow))));
+            h('div', { class: 'section-label', style: 'margin:14px 2px 4px;text-align:left' },
+              '💾 プリセット（押すとその時間で始まります）'),
+            presetRow,
+            postBtn));
         return () => off();
       }
 
@@ -117,7 +129,14 @@
         const startBtn = h('button', { class: 'btn btn-primary btn-big', style: 'min-width:132px',
           onclick: () => (SW.running ? SW.stop() : SW.start()) });
         const lapBtn = h('button', { class: 'btn btn-ghost', onclick: () => SW.lap() }, '🚩 ラップ');
-        const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => SW.reset() }, 'リセット');
+        const resetBtn = h('button', { class: 'btn btn-ghost', onclick: () => {
+          if (SW.running || SW.now() > 0) {
+            confirmDialog(`計測中の記録（${fmtClock(SW.now(), true)}${SW.laps.length ? '・ラップ' + SW.laps.length + '件' : ''}）を消してリセットしますか？`,
+              () => SW.reset(), { title: 'リセットします', okLabel: 'リセットする' });
+            return;
+          }
+          SW.reset();
+        } }, 'リセット');
         const postBtn = h('button', { class: 'btn btn-lav btn-full mt12',
           onclick: () => openX(`【ストップウォッチ】\nただいまの記録は${fmtClock(SW.now(), true)}でした！`) }, '🐦 記録をXへポスト');
         const lapList = h('div');

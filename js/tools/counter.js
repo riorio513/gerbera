@@ -85,7 +85,16 @@
                 save();
                 paint();
               } })),
+          /* 枠ごとに0から数え直す使い方（パネル開け・耐久など）のために、
+             作り直さずに数だけ戻せるようにしておく */
           h('button', { class: 'btn btn-ghost btn-sm btn-full mt12',
+            onclick: () => {
+              if (c.value === 0) { toast('すでに0です'); return; }
+              confirmDialog(`「${c.name || 'カウンター'}」の数を0に戻しますか？（今の数 ${fmtNum(c.value)}）`,
+                () => { c.value = 0; save(); paint(); },
+                { title: '0に戻します', okLabel: '0に戻す' });
+            } }, '↺ 数を0に戻す'),
+          h('button', { class: 'btn btn-ghost btn-sm btn-full mt8',
             onclick: () => {
               openX(`【カウンター】${c.name || 'カウンター'}の今の数は${fmtNum(c.value)}。目標まであと${fmtNum(Math.max(0, limit() - c.value))}です！`);
             } }, '🐦 Xにポストする'));

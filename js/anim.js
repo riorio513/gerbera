@@ -57,8 +57,12 @@
     void dieEl.offsetWidth; // 同じアニメーションの再実行を保証する強制リフロー
     dieEl.classList.add('rolling');
 
+    /* cancel() で中断したときも必ず解決させる。解決しないままだと
+       呼び出し側の Promise.all が永久に待ち続け、ボタンが押せなくなる。 */
+    let resolveNow = null;
     const promise = new Promise(resolve => {
       let settled = false;
+      resolveNow = () => { if (!settled) { settled = true; resolve(); } };
       const finishSettle = () => {
         if (settled || cancelled) return;
         settled = true;
@@ -91,6 +95,7 @@
         cancelled = true;
         timers.forEach(clearTimeout);
         dieEl.classList.remove('rolling', 'settled');
+        if (resolveNow) resolveNow();
       }
     };
   }

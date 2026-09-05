@@ -128,14 +128,46 @@
 
     /* カレンダー（配信管理で登録した予定・プラス記録の閲覧のみ。入力は配信管理から） */
     const calBox = h('div', { class: 'home-cal' });
+    let calHandle = null;
+
+    /* 今日のプラス（毎日つける記録なので、配信管理まで潜らずここで完結させる） */
+    const plusRow = Cal ? h('div', { class: 'home-plus' }) : null;
+    function paintPlus() {
+      const t = Cal.todayISO();
+      const rec = Cal.plusOn(t);
+      const cur = rec && rec.done ? (+rec.amount || 0) : null;
+      plusRow.replaceChildren(
+        h('span', { class: 'home-plus-label' }, '今日のプラス'),
+        ...[2, 4, 6].map(a => h('button', {
+          class: 'home-plus-btn' + (cur === a ? ' on' : ''),
+          'aria-pressed': cur === a ? 'true' : 'false',
+          onclick: () => {
+            const r = Cal.plusOn(t);
+            if (cur === a) {
+              if (r && r.plan) Cal.update(r.id, { done: false, amount: 0 });
+              else if (r) Cal.remove(r.id);
+              toast('今日のプラス記録を取り消しました');
+            } else {
+              const rr = r || Cal.add({ type: 'plus', date: t, plan: false, done: false, amount: 0 });
+              Cal.update(rr.id, { done: true, amount: a });
+              toast(`今日のプラスを＋${a}で記録しました`);
+            }
+            paintPlus();
+            if (calHandle) calHandle.refresh();
+          }
+        }, '＋' + a)));
+    }
+    if (plusRow) paintPlus();
 
     view.replaceChildren(
       h('h1', { class: 'home-greet' },
-        'おかえりなさい、', h('span', { class: 'home-greet-name' }, '〇〇'), 'さん'),
-      h('div', { class: 'home-panel' }, noticePanel, remindCard, planCard),
+        'おかえりなさい、', h('span', { class: 'home-greet-name' }, S.liverName || '〇〇'), 'さん'),
+      h('div', { class: 'home-panel' }, noticePanel, remindCard, planCard, plusRow),
       calBox
     );
-    if (Cal && Cal.mount) Cal.mount(calBox, { showMonthList: false, showPlusSummary: false, readOnly: true });
+    if (Cal && Cal.mount) {
+      calHandle = Cal.mount(calBox, { showMonthList: false, showPlusSummary: false, readOnly: true });
+    }
 
     /* 初回表示時に一度だけリマインドのトースト */
     if (!remindShown && S.notify && Cal) {

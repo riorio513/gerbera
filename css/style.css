@@ -103,13 +103,13 @@ a{color:var(--main-strong);}
 /* 情報パネル（運営おしらせ＋今後の枠をまとめた囲み） */
 .home-panel{
   background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:10px;margin-bottom:10px;
-  display:flex;flex-direction:column;gap:8px;
+  box-shadow:var(--shadow);padding:8px;margin-bottom:9px;
+  display:flex;flex-direction:column;gap:6px;
 }
 .home-info{
   display:flex;flex-direction:column;gap:3px;text-align:left;width:100%;
   background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius-s);
-  padding:12px 14px;
+  padding:9px 12px;
 }
 button.home-info{transition:transform .12s, background .12s;}
 button.home-info:active{transform:scale(.985);}
@@ -136,6 +136,24 @@ button.home-info:active{transform:scale(.985);}
   display:flex;align-items:center;justify-content:center;
 }
 .home-info-x:active{background:rgba(255,255,255,.45);}
+/* 今日のプラス（ホームから1タップで記録する行） */
+.home-plus{
+  display:flex;align-items:center;gap:6px;width:100%;
+  background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius-s);
+  padding:4px 7px;
+}
+.home-plus-label{
+  flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--text-sub);
+  text-align:left;letter-spacing:.02em;
+}
+.home-plus-btn{
+  flex-shrink:0;min-width:44px;padding:4px 8px;border-radius:9px;
+  border:1px solid var(--main);background:var(--bg);color:var(--main-strong);
+  font-size:13px;font-weight:900;line-height:1.2;
+}
+.home-plus-btn:active{transform:scale(.95);}
+.home-plus-btn.on{background:var(--main);border-color:var(--main);color:#fff;}
+
 .home-info-soon-note{font-size:13.5px;color:var(--text-sub);}
 .home-info-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .home-info-mini{align-items:center;text-align:center;gap:2px;}
@@ -618,11 +636,24 @@ select.input{
 .lm-count{margin-left:auto;font-size:12px;font-weight:700;color:var(--text-sub);}
 .lm-rows{display:flex;flex-direction:column;}
 .lmr{
-  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
-  padding:11px 4px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:6px;width:100%;text-align:left;
+  padding:9px 4px;border-bottom:1px solid var(--line);
 }
 .lm-rows .lmr:last-child{border-bottom:none;}
-.lmr:active{background:var(--main-faint);}
+.lmr-open{
+  flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+  text-align:left;padding:3px 0;border-radius:8px;
+}
+.lmr-open:active{background:var(--main-faint);}
+.lmr-stamp-btn{
+  flex-shrink:0;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;min-width:54px;padding:5px 6px;border-radius:11px;
+  border:1px solid var(--main);background:var(--main-faint);color:var(--main-strong);
+  font-size:10.5px;font-weight:800;line-height:1.25;
+}
+.lmr-stamp-btn:active{background:var(--main);color:#fff;}
+.lmr-stamp-btn.done{border-color:var(--line);background:transparent;color:var(--text-sub);}
+.lmr-stamp-ico{font-size:14px;line-height:1;}
 .lmr-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
 .lmr-name{font-size:15px;font-weight:900;color:var(--text);overflow-wrap:anywhere;}
 .lmr-sub{font-size:11.5px;font-weight:500;color:var(--text-sub);}
@@ -717,6 +748,8 @@ details.editor summary::-webkit-details-marker{display:none;}
 details.editor summary::before{content:"▸";transition:transform .18s;font-size:13px;}
 details.editor[open] summary::before{transform:rotate(90deg);}
 .editor-body{padding:2px 15px 15px;}
+/* ルーレットが回っている間は項目編集を触れなくする */
+.editor-locked{pointer-events:none;opacity:.45;}
 
 /* ---------- 空表示 ---------- */
 .empty{
@@ -870,7 +903,7 @@ details.editor[open] summary::before{transform:rotate(90deg);}
 .dash-plan{
   display:flex;flex-direction:column;gap:4px;text-align:left;width:100%;
   background:linear-gradient(135deg,var(--lav-soft),var(--main-faint));
-  border:1px solid var(--lav-soft);border-radius:var(--radius-s);padding:13px 14px;
+  border:1px solid var(--lav-soft);border-radius:var(--radius-s);padding:10px 12px;
 }
 .dash-plan:active{transform:scale(.99);}
 .dash-plan-head{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;}
@@ -1075,9 +1108,9 @@ button.cal-cell:active{transform:scale(.95);}
 /* ホームのカレンダーは「ひと目で分かる」用途なので、1画面に収まるよう詰める
    （6週表示の月でもスクロールが出ない高さに揃えてある） */
 .home-cal .cal-grid{gap:2px;}
-.home-cal .cal-cell{aspect-ratio:1 / 0.6;padding-top:3px;border-radius:7px;}
+.home-cal .cal-cell{aspect-ratio:1 / 0.52;padding-top:2px;border-radius:7px;}
 .home-cal .cal-cell-n{font-size:12px;}
-.home-cal .cal-grid.cal-6w .cal-cell{aspect-ratio:1 / 0.5;padding-top:2px;}
+.home-cal .cal-grid.cal-6w .cal-cell{aspect-ratio:1 / 0.43;padding-top:1px;}
 .home-cal .cal-grid.cal-6w .cal-cell-n{font-size:11px;}
 .home-cal .cal-grid.cal-6w .cal-band{top:14px;}
 .home-cal .cal-band{top:17px;height:3px;}

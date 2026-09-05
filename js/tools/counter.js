@@ -4,7 +4,7 @@
    小さいコンパクトな行にまとめ、スクロールなしで並べられるようにする。
    加算単位・上限などの細かい設定は行の下に折りたたんで表示する。 */
 (function () {
-  const { register, Store, h, uid, toast, fmtNum, openX } = Gerbera;
+  const { register, Store, h, uid, toast, fmtNum, openX, confirmDialog } = Gerbera;
   const KEY = 'counters';
   const DEFAULT_LIMIT = 99999;
   const MIN_VALUE = -99999;
@@ -106,10 +106,11 @@
           moreBtn,
           h('button', { class: 'icon-btn danger', 'aria-label': 'このカウンターを削除', 'data-lbl': '削除',
             onclick: () => {
-              if (!confirm(`「${c.name || 'カウンター'}」を削除しますか？`)) return;
-              counters = counters.filter(x => x.id !== c.id);
-              save();
-              render();
+              confirmDialog(`「${c.name || 'カウンター'}」を削除しますか？`, () => {
+                counters = counters.filter(x => x.id !== c.id);
+                save();
+                render();
+              });
             } }, '🗑'));
 
         paint();

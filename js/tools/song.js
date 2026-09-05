@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: 楽曲メモ（持ち歌保存・リクエスト管理・並び替え・次に歌う曲・歌唱履歴） */
 (function () {
-  const { register, Store, h, uid, toast, openX } = Gerbera;
+  const { register, Store, h, uid, toast, openX, confirmDialog } = Gerbera;
   const KEY = 'song';
 
   register({
@@ -127,9 +127,10 @@
           rows.length ? rows : h('div', { class: 'empty' }, '歌った曲がここに残ります'),
           st.history.length ? h('button', { class: 'btn btn-danger btn-sm btn-full mt12',
             onclick: () => {
-              if (!confirm('歌唱履歴を全部消しますか？')) return;
-              st.history = [];
-              save(); render();
+              confirmDialog('歌唱履歴を全部消しますか？', () => {
+                st.history = [];
+                save(); render();
+              });
             } }, '履歴をクリア') : null);
       }
 

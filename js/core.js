@@ -110,6 +110,26 @@ window.Gerbera = (function () {
     return { close, body };
   }
 
+  /* ---- 確認ダイアログ ----
+     window.confirm()はホーム画面に追加したPWA（スタンドアロン表示）では
+     ダイアログが出ずに即falseを返す端末があり、削除ボタンなどが反応しない
+     ように見える不具合の原因になるため、これを使う。 */
+  function confirmDialog(message, onYes, opts) {
+    opts = opts || {};
+    modal({
+      title: opts.title || '確認',
+      render(body, { close }) {
+        body.append(
+          h('p', { class: 'note', style: 'white-space:pre-wrap;margin-bottom:14px' }, message),
+          h('div', { class: 'hstack', style: 'gap:8px' },
+            h('button', { class: 'btn btn-ghost', style: 'flex:1', onclick: close }, opts.cancelLabel || 'キャンセル'),
+            h('button', { class: 'btn ' + (opts.danger !== false ? 'btn-danger' : 'btn-primary'), style: 'flex:1',
+              onclick: () => { close(); onYes(); } }, opts.okLabel || '削除する'))
+        );
+      }
+    });
+  }
+
   /* ---- トースト通知 ---- */
   let toastTimer = null;
   function toast(msg) {
@@ -283,5 +303,5 @@ window.Gerbera = (function () {
     openX(postText);
   }
 
-  return { Store, register, getTool, tools, h, uid, emitter, modal, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openX, shareResultImage };
+  return { Store, register, getTool, tools, h, uid, emitter, modal, confirmDialog, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openX, shareResultImage };
 })();

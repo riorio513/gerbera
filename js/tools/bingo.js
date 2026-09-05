@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ビンゴ（1〜99抽選・重複なし・履歴表示） */
 (function () {
-  const { register, Store, h, toast } = Gerbera;
+  const { register, Store, h, toast, confirmDialog } = Gerbera;
   const KEY = 'bingo.drawn';
   const MAX = 99;
 
@@ -72,11 +72,12 @@
             h('button', { class: 'btn btn-danger btn-sm btn-full mt12',
               onclick: () => {
                 if (!drawn.length) { toast('まだ数字を引いていません'); return; }
-                if (!confirm('履歴を消して最初からにしますか？')) return;
-                drawn = [];
-                save();
-                numDisplay.textContent = '--';
-                paint();
+                confirmDialog('履歴を消して最初からにしますか？', () => {
+                  drawn = [];
+                  save();
+                  numDisplay.textContent = '--';
+                  paint();
+                });
               } }, 'リセット')))
       );
       paint();

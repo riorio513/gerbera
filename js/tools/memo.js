@@ -6,7 +6,7 @@
      「詳細（そのリスナーの記録とメモ）」の2画面構成にしている。
    どちらもこの端末・ブラウザだけに保存される。 */
 (function () {
-  const { register, Store, h, uid, toast, modal } = Gerbera;
+  const { register, Store, h, uid, toast, modal, confirmDialog } = Gerbera;
 
   function copyText(text) {
     const done = () => toast('📋 コピーしました');
@@ -334,9 +334,10 @@
                   onclick: () => copyText((n.name ? n.name + '\n' : '') + n.note) }, '📋'),
                 h('button', { class: 'icon-btn icon-btn-sm danger', 'aria-label': '削除', 'data-lbl': '削除',
                   onclick: () => {
-                    if (!confirm('このメモを削除しますか？')) return;
-                    preserveScroll(() => {
-                      notes = notes.filter(x => x.id !== n.id); save(); renderDetail();
+                    confirmDialog('このメモを削除しますか？', () => {
+                      preserveScroll(() => {
+                        notes = notes.filter(x => x.id !== n.id); save(); renderDetail();
+                      });
                     });
                   } }, '🗑')));
           }
@@ -353,10 +354,11 @@
               stampRow,
               btns,
               h('button', { class: 'btn btn-danger btn-sm btn-full mt12', onclick: () => {
-                if (!confirm(`「${name}」の記録とメモをすべて削除しますか？`)) return;
-                notes = notes.filter(n => (n.name || '').trim() !== name); save();
-                const store = allMeta(); delete store[name]; Store.set(META, store);
-                view = 'list'; render();
+                confirmDialog(`「${name}」の記録とメモをすべて削除しますか？`, () => {
+                  notes = notes.filter(n => (n.name || '').trim() !== name); save();
+                  const store = allMeta(); delete store[name]; Store.set(META, store);
+                  view = 'list'; render();
+                });
               } }, 'このリスナーを削除')),
             h('div', { class: 'card' },
               h('div', { class: 'section-label' }, '📝 メモ'),

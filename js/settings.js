@@ -228,11 +228,6 @@
           '現在、購入・サブスクリプションのお申し込みはありません。'),
         h('p', { class: 'note', style: 'margin-top:8px' },
           'AI相談機能など有料メニューの提供を開始したら、ここに加入状況・次回請求日・解約の手続きが表示されます。')),
-      h('div', { class: 'card' },
-        h('div', { class: 'section-label' }, '加入状況'),
-        h('div', { class: 'list-row' },
-          h('span', { class: 'row-main' }, 'AIと相談する（月額500円）'),
-          h('span', { class: 'row-sub' }, '未加入'))),
       h('p', { class: 'note', style: 'margin-top:12px' },
         '決済まわりは本サービスでは取り扱っていません。加入手続きが用意でき次第、この画面から案内します。')
     );

@@ -2,7 +2,7 @@
 /* ============================================================
    ガーベラ アプリ本体
    - ホーム（ダッシュボード）
-   - 画面下部ナビ（ツール／企画／AIと相談／配信管理／メモ）
+   - 画面下部ナビ（ホーム／ツール／企画／配信管理／メモ。AI相談は AI_VISIBLE で出し分け）
    - 画面右下スピードダイヤル（お気に入りツール・全画面で起動可）
    - ルーター（各画面は js/settings.js・js/calendar.js・js/iriam.js が登録）
    ============================================================ */
@@ -41,12 +41,15 @@
     { label: 'トークテーマガチャ',       tool: 'theme' },
     { label: '心理テスト',               tool: 'psych' },
     { label: '楽曲メモ',                 tool: 'song' },
-    { label: '投票',                     tool: null },
-    { label: 'クイズ',                   tool: null },
-    { label: 'トランプ',                 tool: null },
-    { label: 'HIGH＆LOW',                tool: null }
+    { label: '投票',                     tool: null }
   ];
   Gerbera.TOOL_MENU = TOOL_MENU;
+
+  /* AI相談機能のフラグ。
+     AI_VISIBLE … false のあいだは画面下部ナビから隠し、#ai も開けない（一時的に非公開）。
+     AI_ENABLED … 公開後の文言切り替え用。true で「月額500円のサブスク入会が必要です」になる。 */
+  const AI_VISIBLE = false;
+  const AI_ENABLED = false;
 
   /* ---- 画面下部ナビ（左端＝ホーム）。「ツール」は画面遷移せず小窓で開く ---- */
   const NAV = [
@@ -55,14 +58,10 @@
     { label: '企画',     icon: '🎬', hash: 'plans',     match: p => p === 'plans' || p === 'plan' },
     { label: '配信管理', icon: '📊', hash: 'kanri',     match: p => p === 'kanri' || p === 'calendar' || p === 'planday' },
     { label: 'メモ',     icon: '📝', memoSheet: true, match: () => sheetMode === 'memo' },
-    { label: 'AI相談',   icon: '🤖', hash: 'ai',        match: p => p === 'ai' }
-  ];
+    { label: 'AI相談',   icon: '🤖', hash: 'ai',        match: p => p === 'ai', hidden: !AI_VISIBLE }
+  ].filter(item => !item.hidden);
 
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffQ3-wIxkj7f4A7BEISRkSX90_2Mlj4tSJvbObxFsErTJprg/viewform?usp=publish-editor';
-
-  /* AI相談機能フラグ。true にすると補足文が
-     「※この機能はまだ実装されていません」→「※この機能は月額500円のサブスク入会が必要です」に切り替わる */
-  const AI_ENABLED = false;
 
   const view = document.getElementById('view');
   const backBtn = document.getElementById('backBtn');
@@ -293,7 +292,7 @@
     if (p0 === 'tool' && parts[1]) return renderToolDirect(parts[1]);
     if (p0 === 'plans') return renderPlanList();
     if (p0 === 'plan' && parts[1]) return renderPlan(parts[1], parts[2] || null);
-    if (p0 === 'ai') return renderAI();
+    if (p0 === 'ai' && AI_VISIBLE) return renderAI();
     if (p0 === 'kanri' && parts[1] === 'iriam') return SC.iriamAll && SC.iriamAll(view);
     if (p0 === 'kanri') return SC.kanri && SC.kanri(view);
     if (p0 === 'calendar') return SC.calendar && SC.calendar(view);

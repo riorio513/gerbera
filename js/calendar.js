@@ -325,7 +325,8 @@
         ['日', '月', '火', '水', '木', '金', '土'].map((w, i) =>
           h('span', { class: 'cal-dow-c' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '') }, w)));
 
-      const grid = h('div', { class: 'cal-grid' },
+      // 6週になる月はホーム画面が1画面に収まらなくなるので、CSS側で行を詰めるための目印をつける
+      const grid = h('div', { class: 'cal-grid' + (cells.length / 7 >= 6 ? ' cal-6w' : '') },
         cells.map(dt => {
           if (!dt) return h('span', { class: 'cal-cell cal-cell-empty' });
           const ds = iso(dt);

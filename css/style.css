@@ -96,15 +96,15 @@ a{color:var(--main-strong);}
 
 .home-greet{
   font-size:20px;color:var(--main-deep);text-align:center;
-  margin:8px 2px 16px;line-height:1.45;
+  margin:2px 2px 8px;line-height:1.45;
 }
 .home-greet-name{color:var(--main-strong);}
 
 /* 情報パネル（運営おしらせ＋今後の枠をまとめた囲み） */
 .home-panel{
   background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:12px;margin-bottom:20px;
-  display:flex;flex-direction:column;gap:10px;
+  box-shadow:var(--shadow);padding:10px;margin-bottom:10px;
+  display:flex;flex-direction:column;gap:8px;
 }
 .home-info{
   display:flex;flex-direction:column;gap:3px;text-align:left;width:100%;
@@ -1072,15 +1072,28 @@ button.cal-cell:active{transform:scale(.95);}
   position:absolute;top:2px;right:2px;font-size:9px;font-weight:900;line-height:1;
   padding:1px 3px;border-radius:4px;
 }
-/* ホームのカレンダーは「ひと目で分かる」用途なので、1画面に収まるよう少し詰める */
-.home-cal .cal-cell{aspect-ratio:1 / 0.8;}
-.home-cal .cal-legend{margin:8px 0 0;}
-.home-cal .cal-head{margin:0 0 8px;}
+/* ホームのカレンダーは「ひと目で分かる」用途なので、1画面に収まるよう詰める
+   （6週表示の月でもスクロールが出ない高さに揃えてある） */
+.home-cal .cal-grid{gap:2px;}
+.home-cal .cal-cell{aspect-ratio:1 / 0.6;padding-top:3px;border-radius:7px;}
+.home-cal .cal-cell-n{font-size:12px;}
+.home-cal .cal-grid.cal-6w .cal-cell{aspect-ratio:1 / 0.5;padding-top:2px;}
+.home-cal .cal-grid.cal-6w .cal-cell-n{font-size:11px;}
+.home-cal .cal-grid.cal-6w .cal-band{top:14px;}
+.home-cal .cal-band{top:17px;height:3px;}
+.home-cal .cal-dots{bottom:3px;gap:2px;}
+.home-cal .cal-dot{width:4px;height:4px;}
+.home-cal .cal-dow-c{font-size:11.5px;padding:0 0 1px;}
+.home-cal .cal-legend{margin:4px 0 0;gap:9px;}
+.home-cal .cal-legend-i{font-size:11.5px;}
+.home-cal .cal-head{margin:0 0 6px;}
+.home-cal .cal-nav{width:30px;height:30px;font-size:18px;}
+.home-cal .cal-month{font-size:15px;}
 .cal-plus.done{background:#E8B15C;color:#5A3A12;}
 .cal-plus.plan{background:transparent;color:var(--text-sub);border:1px dashed var(--text-sub);}
 :root[data-theme="dark"] .cal-plus.done{background:#C9922E;color:#241a0a;}
 .cal-legend-i .cal-plus{padding:1px 4px;}
-.home-cal{margin-top:8px;}
+.home-cal{margin-top:2px;}
 .cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;position:absolute;bottom:4px;}
 .cal-dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
 .dot-plan{background:var(--main);}

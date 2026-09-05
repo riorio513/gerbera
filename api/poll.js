@@ -5,7 +5,7 @@
    他の人の投票を見ることはできない。 */
 import {
   TOKEN, MIN_OPTIONS, MAX_OPTIONS, MAX_TITLE, MAX_OPTION, MAX_LIMIT_SEC,
-  newId, sha256, json, readBody, loadPoll, savePoll, isClosed, isExpired, guard
+  newId, newPin, sha256, safeEqual, json, readBody, loadPoll, savePoll, isClosed, isExpired, guard
 } from './_poll-store.js';
 
 async function handler(req, res) {
@@ -16,12 +16,20 @@ async function handler(req, res) {
     if (!/^[0-9a-f]{16,64}$/.test(id)) return json(res, 400, { error: 'bad_id' });
     const poll = await loadPoll(id);
     if (!poll || isExpired(poll)) return json(res, 404, { error: 'not_found' });
+
+    const closed = isClosed(poll);
+    /* 合言葉つきの投票は、正しい合言葉が来るまでお題も選択肢も一切渡さない */
+    if (poll.passHash) {
+      const pass = req.query.pass ? String(req.query.pass) : '';
+      if (!pass) return json(res, 200, { id: poll.id, needsPass: true, closed });
+      if (!safeEqual(sha256(pass), poll.passHash)) return json(res, 403, { error: 'bad_pass' });
+    }
     return json(res, 200, {
       id: poll.id,
       title: poll.title,
       options: poll.options,
       deadline: poll.deadline || null,
-      closed: isClosed(poll)
+      closed
     });
   }
 
@@ -47,14 +55,21 @@ async function handler(req, res) {
       deadline = Date.now() + sec * 1000;
     }
 
+    /* 「誰でも投票可能」がOFF（既定）のときだけ合言葉を発行する。
+       生の合言葉はこのレスポンスでライバーの端末に一度渡すだけで、
+       サーバーにはハッシュしか残さない（ownerKeyと同じやり方）。 */
+    const openToAll = body.openToAll === true;
+    const pass = openToAll ? null : newPin();
+
     const id = newId(12);
     const ownerKey = newId(16);
     await savePoll({
       id, title, options, deadline,
       createdAt: Date.now(),
-      ownerKeyHash: sha256(ownerKey)
+      ownerKeyHash: sha256(ownerKey),
+      passHash: pass ? sha256(pass) : null
     });
-    return json(res, 200, { id, ownerKey, deadline });
+    return json(res, 200, { id, ownerKey, deadline, pass });
   }
 
   res.setHeader('Allow', 'GET, POST');

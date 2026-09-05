@@ -35,7 +35,7 @@
     too_many_options: `選択肢は最大${MAX_OPTIONS}つまでです`,
     option_too_long: '選択肢が長すぎます',
     title_too_long: '投票内容が長すぎます',
-    limit_too_long: '制限時間は24時間までです',
+    limit_too_long: '制限時間は7日までです',
     storage_unconfigured: 'サーバー側の準備ができていません',
     not_found: 'この投票は見つかりませんでした',
     forbidden: 'この投票の集計を見る権限がありません'
@@ -47,6 +47,7 @@
     mount(root) {
       let poll = Store.get(KEY, null);
       let timeLimitOn = false;
+      let openToAll = false;
       let options = ['', ''];
       let title = '';
       let ticking = null;
@@ -82,17 +83,17 @@
 
         /* トグルを切り替えても小窓の高さが変わらないよう、行そのものは常に置いて
            中身の見え方だけ切り替える */
-        const hIn = timeNum(23, '時間'), mIn = timeNum(59, '分'), sIn = timeNum(59, '秒');
         function timeNum(max, label) {
           return h('input', { class: 'input w-num', type: 'number', min: 0, max,
             inputmode: 'numeric', placeholder: '0', 'aria-label': label });
         }
+        const dIn = timeNum(7, '日'), hIn = timeNum(23, '時間'), mIn = timeNum(59, '分'), sIn = timeNum(59, '秒');
         const limitRow = h('div', { class: 'vote-limit' },
           h('span', { class: 'vote-limit-label' }, '制限時間'),
-          hIn, h('b', {}, '時'), mIn, h('b', {}, '分'), sIn, h('b', {}, '秒'));
+          dIn, h('b', {}, '日'), hIn, h('b', {}, '時'), mIn, h('b', {}, '分'), sIn, h('b', {}, '秒'));
         function paintLimit() {
           limitRow.classList.toggle('off', !timeLimitOn);
-          [hIn, mIn, sIn].forEach(i => { i.disabled = !timeLimitOn; });
+          [dIn, hIn, mIn, sIn].forEach(i => { i.disabled = !timeLimitOn; });
         }
 
         const toggle = h('button', { class: 'toggle' + (timeLimitOn ? ' on' : ''),
@@ -104,6 +105,26 @@
             paintLimit();
           } });
         paintLimit();
+
+        /* 既定はOFF＝合言葉が要る限定公開。ONにすると合言葉なしで誰でも投票できる */
+        const accessToggle = h('button', { class: 'toggle' + (openToAll ? ' on' : ''),
+          role: 'switch', 'aria-checked': openToAll ? 'true' : 'false',
+          onclick: () => {
+            openToAll = !openToAll;
+            accessToggle.classList.toggle('on', openToAll);
+            accessToggle.setAttribute('aria-checked', openToAll ? 'true' : 'false');
+            paintAccess();
+          } });
+        const accessNote = h('p', { class: 'vote-access-note' });
+        function paintAccess() {
+          accessNote.textContent = openToAll
+            ? 'リンクを知っていれば誰でも投票できます（合言葉なし）'
+            : '発行後に合言葉が表示されます。伝えた人だけが投票画面に進めます';
+        }
+        paintAccess();
+        const accessRow = h('div', { class: 'vote-access' },
+          h('span', { class: 'vote-access-label' }, '🔓 誰でも投票可能'),
+          accessToggle);
 
         const optWrap = h('div', { class: 'vote-opts' });
         function paintOptions() {
@@ -136,7 +157,7 @@
             if (!t) { toast('投票内容を入力してください'); return; }
             if (opts.length < MIN_OPTIONS) { toast(`選択肢を${MIN_OPTIONS}つ以上入れてください`); return; }
             const limitSec = timeLimitOn
-              ? (+hIn.value || 0) * 3600 + (+mIn.value || 0) * 60 + (+sIn.value || 0)
+              ? (+dIn.value || 0) * 86400 + (+hIn.value || 0) * 3600 + (+mIn.value || 0) * 60 + (+sIn.value || 0)
               : 0;
             if (timeLimitOn && limitSec <= 0) { toast('制限時間を入力してください'); return; }
 
@@ -145,9 +166,10 @@
             try {
               const r = await api('/api/poll', {
                 method: 'POST',
-                body: JSON.stringify({ title: t, options: opts, limitSec })
+                body: JSON.stringify({ title: t, options: opts, limitSec, openToAll })
               });
-              poll = { id: r.id, ownerKey: r.ownerKey, title: t, options: opts, deadline: r.deadline || null };
+              poll = { id: r.id, ownerKey: r.ownerKey, title: t, options: opts,
+                deadline: r.deadline || null, pass: r.pass || null };
               Store.set(KEY, poll);
               renderShare();
             } catch (e) {
@@ -162,6 +184,8 @@
             h('span', { class: 'section-label', style: 'margin:0' }, '🗳️ 投票をつくる'),
             h('span', { class: 'vote-head-toggle' },
               h('span', { class: 'vote-toggle-label' }, '制限時間'), toggle)),
+          accessRow,
+          accessNote,
           titleIn,
           limitRow,
           h('div', { class: 'input-label', style: 'margin-top:10px' }, '選択肢'),
@@ -187,6 +211,11 @@
           h('p', { class: 'vote-done-text' }, '投票のリンクを発行しました'),
           h('p', { class: 'note center' }, poll.title),
           urlBox,
+          poll.pass ? h('div', { class: 'vote-pass-box' },
+            h('span', { class: 'vote-pass-label' }, '合言葉'),
+            h('span', { class: 'vote-pass-value' }, poll.pass)) : null,
+          poll.pass ? h('p', { class: 'note center', style: 'margin-top:6px' },
+            'この合言葉を、投票してほしい人にだけ伝えてください') : null,
           h('button', { class: 'btn btn-ghost btn-full mt8',
             onclick: () => copyShareText(url).then(() => toast('📋 リンクをコピーしました')) }, '📋 リンクをコピー'),
           h('button', { class: 'btn btn-primary btn-full mt8',
@@ -243,7 +272,7 @@
               h('button', { class: 'btn btn-ghost btn-full', onclick: () => {
                 confirmDialog('いまの集計を閉じて、新しい投票をつくりますか？', () => {
                   Store.remove(KEY);
-                  poll = null; title = ''; options = ['', '']; timeLimitOn = false;
+                  poll = null; title = ''; options = ['', '']; timeLimitOn = false; openToAll = false;
                   renderCompose();
                 }, { title: '新しく投票を行う', okLabel: 'つくる', danger: false });
               } }, '＋ 新しく投票を行う'),

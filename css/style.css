@@ -1272,8 +1272,8 @@ button.cal-cell:active{transform:scale(.95);}
 /* OFFのときは中身を visibility で隠すだけにして高さを保つ。
    中央寄せだと隠れた入力欄に押されてラベルが見切れるので左寄せにする。 */
 .vote-limit{
-  display:flex;align-items:center;justify-content:flex-start;gap:5px;
-  margin-top:8px;padding:6px 10px;border-radius:var(--radius-s);
+  display:flex;align-items:center;justify-content:flex-start;gap:4px;
+  margin-top:8px;padding:6px 8px;border-radius:var(--radius-s);
   background:var(--lav-soft);
 }
 .vote-limit-label{
@@ -1281,12 +1281,32 @@ button.cal-cell:active{transform:scale(.95);}
   margin-right:2px;white-space:nowrap;flex-shrink:0;
 }
 .vote-limit b{font-size:12px;font-weight:700;color:var(--text-sub);flex-shrink:0;}
-/* 小さい画面でも「時 分 秒」が1行に収まるよう、この行の入力欄だけ細くする */
-.vote-limit .w-num{width:48px;min-width:0;padding-left:4px;padding-right:4px;text-align:center;}
+/* 小さい画面でも「日 時 分 秒」が1行に収まるよう、この行の入力欄だけ細くする */
+.vote-limit .w-num{width:36px;min-width:0;padding-left:2px;padding-right:2px;text-align:center;}
 .vote-limit.off{background:var(--bg-soft);}
 .vote-limit.off > *:not(.vote-limit-label){visibility:hidden;}
 .vote-limit.off .vote-limit-label{color:var(--text-sub);}
 .vote-limit.off .vote-limit-label::after{content:'なし';margin-left:4px;font-weight:500;}
+
+/* 「誰でも投票可能」トグル。既定はOFF＝合言葉が要る限定公開 */
+.vote-access{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-top:8px;padding:6px 10px;border-radius:var(--radius-s);
+  background:var(--lav-soft);
+}
+.vote-access-label{font-size:12.5px;font-weight:700;color:var(--lav-strong);}
+.vote-access-note{font-size:11.5px;color:var(--text-sub);margin-top:5px;line-height:1.5;}
+
+/* 発行された合言葉の表示 */
+.vote-pass-box{
+  margin-top:10px;padding:9px 12px;border-radius:var(--radius-s);
+  background:var(--lav-soft);display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.vote-pass-label{font-size:12px;font-weight:700;color:var(--lav-strong);flex-shrink:0;}
+.vote-pass-value{
+  font-size:20px;font-weight:900;color:var(--main-deep);
+  letter-spacing:2px;font-variant-numeric:tabular-nums;
+}
 
 .vote-opts{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
 .vote-opt-row{display:flex;align-items:center;gap:6px;}

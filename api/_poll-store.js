@@ -17,7 +17,7 @@
    1人1ファイルなので、同時に投票されても取りこぼしが起きない。
    ============================================================ */
 import { list, put, del } from '@vercel/blob';
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 
 export const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -26,14 +26,16 @@ export const MIN_OPTIONS = 2;
 export const MAX_TITLE = 200;
 export const MAX_OPTION = 60;
 export const MAX_NAME = 30;
-export const MAX_LIMIT_SEC = 24 * 3600;   // 制限時間の上限は24時間
-export const POLL_TTL_MS = 30 * 86400000; // 30日たった投票は取得を断る
+export const MAX_LIMIT_SEC = 7 * 86400;   // 制限時間の上限は7日
+export const POLL_TTL_MS = 7 * 86400000;  // 7日たった投票は取得を断る
 
 export const pollKey = id => `polls/${id}.json`;
 export const votePrefix = id => `polls/${id}/v/`;
 
 export function newId(bytes = 12) { return randomBytes(bytes).toString('hex'); }
 export function sha256(s) { return createHash('sha256').update(String(s)).digest('hex'); }
+/* 合言葉は口頭やチャットで伝える想定なので、覚えやすい6桁の数字にする */
+export function newPin() { return String(randomInt(0, 1000000)).padStart(6, '0'); }
 
 /* 投票者の名前はそのままファイル名にできないので16進で持つ（空＝匿名） */
 export const encName = s => Buffer.from(String(s || ''), 'utf8').toString('hex');

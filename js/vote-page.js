@@ -19,6 +19,7 @@
     return v;
   }
   const votedKey = id => 'voted.' + id;
+  const passKey = id => 'pass.' + id;
 
   function fmtLeft(ms) {
     ms = Math.max(0, ms);
@@ -36,27 +37,81 @@
       sub ? h('p', { class: 'note center', style: 'margin-top:8px' }, sub) : null));
   }
 
+  /* 合言葉つきの投票は、正しい合言葉が来るまでサーバーがお題も選択肢も返さない。
+     一度通った合言葉は端末に覚えさせ、リンクを開き直しても聞き直さないようにする */
+  async function fetchPoll(pass) {
+    const q = '/api/poll?id=' + encodeURIComponent(pollId) + (pass ? '&pass=' + encodeURIComponent(pass) : '');
+    const r = await fetch(q, { cache: 'no-store' });
+    const data = await r.json().catch(() => null);
+    return { ok: r.ok, status: r.status, data: data || {} };
+  }
+
   async function load() {
     if (!pollId) { notice('🔗', 'リンクが正しくありません', 'ライバーさんからもらったリンクをもう一度開いてみてください'); return; }
     root.replaceChildren(card(h('p', { class: 'note center' }, '読み込んでいます…')));
-    let poll;
+    let res;
     try {
-      const r = await fetch('/api/poll?id=' + encodeURIComponent(pollId), { cache: 'no-store' });
-      poll = await r.json();
-      if (!r.ok) throw new Error(poll && poll.error);
+      res = await fetchPoll(Store.get(passKey(pollId), ''));
     } catch (e) {
-      if (e && e.message === 'not_found') {
-        notice('🌸', 'この投票は見つかりませんでした', 'すでに終了しているかもしれません');
-      } else {
-        notice('📶', '読み込めませんでした', '電波の状態を確かめて、もう一度開いてみてください');
-      }
+      notice('📶', '読み込めませんでした', '電波の状態を確かめて、もう一度開いてみてください');
       return;
     }
+    if (!res.ok) {
+      if (res.status === 404) { notice('🌸', 'この投票は見つかりませんでした', 'すでに終了しているかもしれません'); return; }
+      if (res.status === 403) { Store.remove(passKey(pollId)); renderPassGate(); return; }
+      notice('📶', '読み込めませんでした', '電波の状態を確かめて、もう一度開いてみてください');
+      return;
+    }
+    const poll = res.data;
+    if (poll.needsPass) { renderPassGate(); return; }
 
     /* リンクを開いた時点で締め切りを過ぎていた場合 */
     if (poll.closed) { notice('⏰', '投票の制限時間を過ぎました'); return; }
     if (Store.get(votedKey(pollId), false)) { renderDone(); return; }
     renderVote(poll);
+  }
+
+  function renderPassGate() {
+    const passIn = h('input', { class: 'input', inputmode: 'numeric', maxlength: 12,
+      placeholder: '合言葉', autocomplete: 'off' });
+    const errEl = h('p', { class: 'note center', style: 'margin-top:8px;color:var(--danger)' });
+    const btn = h('button', { class: 'btn btn-primary btn-full mt12', onclick: submit }, '進む');
+    passIn.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+
+    async function submit() {
+      const v = passIn.value.trim();
+      if (!v) { errEl.textContent = '合言葉を入力してください'; return; }
+      btn.disabled = true; btn.textContent = '確認しています…';
+      let res;
+      try {
+        res = await fetchPoll(v);
+      } catch (e) {
+        errEl.textContent = '通信できませんでした。もう一度お試しください';
+        btn.disabled = false; btn.textContent = '進む';
+        return;
+      }
+      if (res.status === 403) {
+        errEl.textContent = '合言葉が正しくありません';
+        btn.disabled = false; btn.textContent = '進む';
+        return;
+      }
+      if (!res.ok) {
+        errEl.textContent = '読み込めませんでした。もう一度お試しください';
+        btn.disabled = false; btn.textContent = '進む';
+        return;
+      }
+      Store.set(passKey(pollId), v);
+      const poll = res.data;
+      if (poll.closed) { notice('⏰', '投票の制限時間を過ぎました'); return; }
+      if (Store.get(votedKey(pollId), false)) { renderDone(); return; }
+      renderVote(poll);
+    }
+
+    root.replaceChildren(card(
+      h('div', { class: 'vp-notice-ico' }, '🔒'),
+      h('p', { class: 'vp-notice' }, 'この投票には合言葉が必要です'),
+      h('p', { class: 'note center', style: 'margin-top:6px' }, 'ライバーさんから聞いた合言葉を入れてください'),
+      passIn, errEl, btn));
   }
 
   function renderDone() {
@@ -118,7 +173,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: pollId, choice: index,
-            name: nameIn.value.trim(), voterId: voterId()
+            name: nameIn.value.trim(), voterId: voterId(),
+            pass: Store.get(passKey(pollId), '')
           })
         });
         const data = await r.json().catch(() => null);
@@ -130,6 +186,12 @@
         if (e && e.message === 'closed') {
           clearInterval(ticking);
           notice('⏰', '制限時間が過ぎたため、投票できません');
+          return;
+        }
+        if (e && e.message === 'bad_pass') {
+          Store.remove(passKey(pollId));
+          toast('合言葉を確認できませんでした。リンクを開き直してください');
+          list.querySelectorAll('.vp-opt').forEach(b => { b.disabled = false; });
           return;
         }
         toast('送信できませんでした。もう一度お試しください');

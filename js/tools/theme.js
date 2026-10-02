@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: トークテーマガチャ（カテゴリー別・更新のたび新しいテーマ） */
 (function () {
-  const { register, h, openX } = Gerbera;
+  const { register, h, sharePost } = Gerbera;
 
   // カテゴリーごとに山札方式（使い切るまで同じテーマを出さない）
   const decks = {};
@@ -14,7 +14,7 @@
   }
 
   register({
-    id: 'theme', name: 'トークテーマ', icon: '💬',
+    id: 'theme', name: 'トークテーマガチャ', icon: '💬',
     mount(root) {
       const cats = Object.keys(Gerbera.DATA.talkThemes);
       let cat = cats[0];
@@ -24,7 +24,7 @@
       const postBtn = h('button', { class: 'btn btn-lav btn-full mt12', hidden: true,
         onclick: () => {
           if (!lastTheme) return;
-          openX(`ただいま${lastTheme}について雑談中！みんな聞きに来てね！`);
+          sharePost(`ただいま${lastTheme}について雑談中！みんな聞きに来てね！`);
         } }, '🐦 Xへポスト');
       function draw() {
         const t = drawFrom(cat);

@@ -14,7 +14,10 @@
             ? h('div', { class: 'vstack', style: 'gap:12px' }, items.map(it =>
                 h('div', { class: 'card-soft' },
                   h('div', { class: 'row-sub', style: 'margin-bottom:5px' }, it.date),
-                  h('div', { style: 'white-space:pre-wrap;line-height:1.75;font-size:13.5px' }, it.text))))
+                  h('div', { style: 'white-space:pre-wrap;line-height:1.75;font-size:13.5px' }, it.text),
+                  it.detail ? h('button', { class: 'news-link',
+                    onclick: () => { Gerbera.closeSheet && Gerbera.closeSheet(); location.hash = 'news/' + it.detail; } },
+                    '詳しく見る ›') : null)))
             : h('div', { class: 'empty' }, 'まだお知らせはありません'))
       );
     }

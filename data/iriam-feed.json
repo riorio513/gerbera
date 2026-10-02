@@ -1,0 +1,73 @@
+{
+  "source": {
+    "events": "https://info.iriam.com/イベントキャンペーン等お知らせ",
+    "news": "https://iriam.com/news",
+    "x": "https://x.com/iriam_event"
+  },
+  "generated": "2026-09-03T11:00:10.049Z",
+  "targetMonth": "2026-10",
+  "note": "本データは IRIAM 公式ページ（info.iriam.com / iriam.com）と公式X（@iriam_event）から自動取得した案内です。日付は告知の投稿日、開催日はタイトルからの推定です。",
+  "events": [
+    {
+      "title": "IRIAM ダジャレの日",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-26",
+      "eventDateText": null,
+      "url": "https://info.iriam.com/3c8afbee5fdb800d8f79e7c3ca9a4dda"
+    },
+    {
+      "title": "#IRIAMいい波 2026 フォトギャラリー",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-19",
+      "eventDateText": null,
+      "url": "https://info.iriam.com/3b3afbee5fdb80b196fddef5a5c9c86d"
+    },
+    {
+      "title": "IRIAM Summer 2026",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-04",
+      "eventDateText": null,
+      "url": "https://info.iriam.com/3b2afbee5fdb808ebfbce3fb8d841ee8"
+    },
+    {
+      "title": "8/11から！IRIAM×家庭科のドラゴン コラボ記念「調理実習コンテスト」開催！",
+      "category": "キャンペーン情報",
+      "postedDate": "2026-08-03",
+      "eventDateText": "8/11から",
+      "url": "https://info.iriam.com/3b1afbee5fdb80d19c40d7450480927e"
+    }
+  ],
+  "ranking": [
+    {
+      "title": "10月度 マンスリーランキングイベント（配信者ランク別）",
+      "category": "ランキングイベント",
+      "postedDate": "2026-08-28",
+      "eventDateText": "10/1〜10/31",
+      "url": "https://info.iriam.com/6ddceb3cc87f48feae92c642359c0c9a"
+    },
+    {
+      "title": "スコアチャレンジ 2026 Autumn",
+      "category": "スコアイベント",
+      "postedDate": "2026-08-20",
+      "eventDateText": "10/10〜10/20",
+      "url": "https://info.iriam.com/6ddceb3cc87f48feae92c642359c0c9a"
+    }
+  ],
+  "xEvents": [
+    {
+      "title": "【開催決定】秋のガチ恋距離チャレンジ 10/5スタート！エントリー受付は10/1から",
+      "category": "公式X",
+      "postedDate": "2026-08-29",
+      "eventDateText": "10/5",
+      "url": "https://x.com/iriam_event"
+    },
+    {
+      "title": "9/20(土) 20:00〜 コラボ記念スペシャル配信イベントを開催します",
+      "category": "公式X",
+      "postedDate": "2026-08-25",
+      "eventDateText": "9/20",
+      "url": "https://x.com/iriam_event"
+    }
+  ],
+  "news": []
+}

@@ -10,7 +10,7 @@ $mime = @{
   ".html"="text/html; charset=utf-8"; ".htm"="text/html; charset=utf-8"
   ".js"="text/javascript"; ".css"="text/css"; ".json"="application/json"
   ".png"="image/png"; ".jpg"="image/jpeg"; ".jpeg"="image/jpeg"; ".svg"="image/svg+xml"
-  ".ico"="image/x-icon"
+  ".ico"="image/x-icon"; ".webmanifest"="application/manifest+json"; ".mjs"="text/javascript"
 }
 
 while ($listener.IsListening) {
@@ -27,6 +27,7 @@ while ($listener.IsListening) {
       if (-not $ct) { $ct = "application/octet-stream" }
       $bytes = [System.IO.File]::ReadAllBytes($filePath)
       $res.ContentType = $ct
+      $res.Headers.Add("Cache-Control", "no-store")
       $res.ContentLength64 = $bytes.Length
       $res.OutputStream.Write($bytes, 0, $bytes.Length)
     } else {

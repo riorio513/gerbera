@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ガチャ（抽選結果編集・排出率設定・リスナー名入力・結果表示・複数連） */
 (function () {
-  const { register, Store, h, uid, toast, fmtNum, openX, shareResultImage } = Gerbera;
+  const { register, Store, h, uid, toast, fmtNum, sharePost, shareResultImage } = Gerbera;
   const KEY = 'gacha.items';
   const PULL_PRESETS = [1, 10, 100];
   const MAX_PULL = 1000;
@@ -32,7 +32,7 @@
         return `【ガチャ】\n${subject}${fmtNum(last.n)}連ガチャの結果！\n` + tallyLines(TALLY_SHOW_MAX).join('\n');
       }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (last) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (last) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!last) return;
@@ -116,6 +116,9 @@
         }
         postBtn.hidden = false;
         postImgBtn.hidden = false;
+        /* 続けて別の人を引くとき、前の人の名前を毎回消さずに済むようにする
+           （結果カードには引いた人の名前が残るので、消えても分からなくならない） */
+        nameInput.value = '';
       }
 
       const drawBtn = h('button', { class: 'btn btn-primary btn-big btn-full mt12', onclick: draw }, '🎁 ガチャを回す');
@@ -139,7 +142,7 @@
             h('input', { class: 'input w-num', type: 'number', min: 0, step: 'any', inputmode: 'decimal',
               value: it.rate, placeholder: '排出率', 'aria-label': '排出率',
               oninput: e => { it.rate = e.target.value === '' ? 0 : +e.target.value; save(); paintTotal(); } }),
-            h('button', { class: 'icon-btn danger', 'aria-label': 'この景品を削除',
+            h('button', { class: 'icon-btn danger', 'aria-label': 'この景品を削除', 'data-lbl': '削除',
               onclick: () => {
                 items = items.filter(x => x.id !== it.id);
                 save();

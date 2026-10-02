@@ -18,13 +18,30 @@ window.Gerbera = (function () {
         return def;
       }
     },
+    /* 保存できたら true。容量超過などで失敗したときは黙って捨てず、
+       画面に知らせる（書いたメモが消えたことに気づけないため）。
+       同じ失敗を連呼しないよう、知らせるのは一定間隔に1回だけ。 */
     set(key, val) {
-      try { localStorage.setItem(PREFIX + key, JSON.stringify(val)); } catch (e) { /* 容量超過など */ }
+      try {
+        localStorage.setItem(PREFIX + key, JSON.stringify(val));
+        return true;
+      } catch (e) {
+        warnSaveFailed();
+        return false;
+      }
     },
     remove(key) {
       try { localStorage.removeItem(PREFIX + key); } catch (e) {}
     }
   };
+
+  let lastSaveWarn = 0;
+  function warnSaveFailed() {
+    const now = Date.now();
+    if (now - lastSaveWarn < 20000) return;
+    lastSaveWarn = now;
+    toast('⚠️ 保存できませんでした。端末の空き容量を確認してください');
+  }
 
   /* ---- ツールレジストリ ----
      tool = { id, name, icon, mount(rootEl) => cleanup関数(任意) } */
@@ -57,12 +74,77 @@ window.Gerbera = (function () {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
+
   function emitter() {
     const subs = new Set();
     return {
       on(fn) { subs.add(fn); return () => subs.delete(fn); },
       emit(...args) { subs.forEach(fn => { try { fn(...args); } catch (e) {} }); }
     };
+  }
+
+  /* ---- 中央モーダル（カレンダーの入力小窓・デビュー日の確認などで使う） ---- */
+  function modal(opts) {
+    opts = opts || {};
+    const box = document.createElement('div');
+    box.className = 'modal' + (opts.wide ? ' modal-wide' : '');
+    const head = document.createElement('div');
+    head.className = 'modal-head';
+    const title = document.createElement('span');
+    title.className = 'modal-title';
+    title.textContent = opts.title || '';
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close';
+    closeBtn.setAttribute('aria-label', '閉じる');
+    closeBtn.textContent = '×';
+    head.append(title, closeBtn);
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    box.append(head, body);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.append(box);
+    document.body.append(backdrop);
+    document.body.classList.add('modal-open');
+
+    function close() {
+      backdrop.classList.remove('open');
+      document.removeEventListener('keydown', onKey);
+      setTimeout(() => {
+        backdrop.remove();
+        if (!document.querySelector('.modal-backdrop')) document.body.classList.remove('modal-open');
+        if (typeof opts.onClose === 'function') opts.onClose();
+      }, 220);
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    backdrop.addEventListener('click', e => { if (e.target === backdrop && opts.dismissable !== false) close(); });
+    closeBtn.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    requestAnimationFrame(() => backdrop.classList.add('open'));
+
+    if (typeof opts.render === 'function') opts.render(body, { close });
+    return { close, body };
+  }
+
+  /* ---- 確認ダイアログ ----
+     window.confirm()はホーム画面に追加したPWA（スタンドアロン表示）では
+     ダイアログが出ずに即falseを返す端末があり、削除ボタンなどが反応しない
+     ように見える不具合の原因になるため、これを使う。 */
+  function confirmDialog(message, onYes, opts) {
+    opts = opts || {};
+    modal({
+      title: opts.title || '確認',
+      render(body, { close }) {
+        body.append(
+          h('p', { class: 'note', style: 'white-space:pre-wrap;margin-bottom:14px' }, message),
+          h('div', { class: 'hstack', style: 'gap:8px' },
+            h('button', { class: 'btn btn-ghost', style: 'flex:1', onclick: close }, opts.cancelLabel || 'キャンセル'),
+            h('button', { class: 'btn ' + (opts.danger !== false ? 'btn-danger' : 'btn-primary'), style: 'flex:1',
+              onclick: () => { close(); onYes(); } }, opts.okLabel || '削除する'))
+        );
+      }
+    });
   }
 
   /* ---- トースト通知 ---- */
@@ -120,8 +202,10 @@ window.Gerbera = (function () {
     }
   }
 
-  /* ---- X（旧Twitter）投稿画面を開く ---- */
-  function openX(text) {
+  /* ---- Xの投稿画面を開く ----
+     文面は入った状態で開くだけで、投稿ボタンは本人が押す。
+     投稿先を選べるようにしたものは js/share.js の sharePost。 */
+  function openXIntent(text) {
     window.open('https://x.com/intent/post?text=' + encodeURIComponent(text), '_blank', 'noopener');
   }
 
@@ -210,10 +294,10 @@ window.Gerbera = (function () {
       blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     } catch (e) {
       toast('画像の作成に失敗しました');
-      openX(postText);
+      openXIntent(postText);
       return;
     }
-    if (!blob) { openX(postText); return; }
+    if (!blob) { openXIntent(postText); return; }
 
     let copied = false;
     if (navigator.clipboard && window.ClipboardItem) {
@@ -235,8 +319,16 @@ window.Gerbera = (function () {
       setTimeout(() => URL.revokeObjectURL(url), 8000);
       toast('🖼️ 画像を保存しました。投稿画面に手動で添付してね');
     }
-    openX(postText);
+    openXIntent(postText);
   }
 
-  return { Store, register, getTool, tools, h, uid, emitter, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openX, shareResultImage };
+  /* 投票のサーバー処理（api/）の置き場。サイト本体を GitHub Pages で配信しているときは
+     Pages 側に api/ を動かす場所がないため、別に Vercel へ置いた API を呼ぶ。
+     Vercel 上やローカルで開いているときは同じオリジンの /api/ を使う。 */
+  const VOTE_API_ORIGIN = 'https://gerbera-api.vercel.app';
+  function apiUrl(path) {
+    return (/\.github\.io$/.test(location.hostname) ? VOTE_API_ORIGIN : '') + path;
+  }
+
+  return { Store, register, getTool, tools, h, uid, emitter, modal, confirmDialog, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openXIntent, shareResultImage, apiUrl };
 })();

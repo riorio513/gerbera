@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: ルーレット（項目自由追加・編集・保存・ランダム抽選） */
 (function () {
-  const { register, Store, h, uid, toast, openX, shareResultImage } = Gerbera;
+  const { register, Store, h, uid, toast, sharePost, shareResultImage } = Gerbera;
   const KEY = 'roulette.items';
   const COLORS = ['#F2C4D6', '#D9CDF0', '#F9DFEA', '#C8B9E8', '#F3D0DF', '#E3DBF5'];
   const SVGNS = 'http://www.w3.org/2000/svg';
@@ -13,6 +13,8 @@
       const save = () => Store.set(KEY, items);
       let rot = 0;          // 累積回転角
       let spinning = false;
+      let drum = null;      // 回転中のドラムロール（SE）
+      const stopDrum = () => { if (drum) { drum.stop(); drum = null; } };
 
       /* --- ホイール描画 --- */
       const rotor = document.createElementNS(SVGNS, 'g');
@@ -54,12 +56,15 @@
           const mid = i * seg + seg / 2;
           const rad = (mid - 90) * Math.PI / 180;
           const tx = 110 + 66 * Math.cos(rad), ty = 110 + 66 * Math.sin(rad);
-          const label = it.label.length > 6 ? it.label.slice(0, 6) + '…' : it.label;
+          /* 罰ゲームやリスナー名は6文字を超えることが多いので、項目が少ないときは
+             長めに出し、そのぶん文字を小さくして回転中でも読めるようにする */
+          const maxChars = n <= 3 ? 12 : n <= 5 ? 10 : n <= 8 ? 8 : 6;
+          const label = it.label.length > maxChars ? it.label.slice(0, maxChars) + '…' : it.label;
           const t = document.createElementNS(SVGNS, 'text');
           t.setAttribute('x', tx); t.setAttribute('y', ty);
           t.setAttribute('text-anchor', 'middle');
           t.setAttribute('dominant-baseline', 'middle');
-          t.setAttribute('font-size', n > 8 ? '9' : '11');
+          t.setAttribute('font-size', label.length > 8 ? '8' : label.length > 6 ? '9' : (n > 8 ? '9' : '11'));
           t.setAttribute('font-weight', '700');
           t.setAttribute('fill', '#43324E');
           t.setAttribute('transform', `rotate(${mid} ${tx} ${ty})`);
@@ -78,7 +83,7 @@
       const resultArea = h('div');
       function postText() { return `【ルーレット】\nただいまのルーレット結果は${lastWinnerLabel}でした！`; }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (lastWinnerLabel) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (lastWinnerLabel) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!lastWinnerLabel) return;
@@ -95,9 +100,16 @@
           if (items.length < 2) { toast('項目を2つ以上追加してね'); return; }
           spinning = true;
           spinBtn.disabled = true;
+          if (Gerbera.SE) { Gerbera.SE.unlock(); drum = Gerbera.SE.loop('drumroll.mp3'); }
+          /* 回っている間の項目編集は当たりの表示とかみ合わないので閉じて止める */
+          editor.open = false;
+          editor.classList.add('editor-locked');
           resultArea.replaceChildren();
           const n = items.length, seg = 360 / n;
           const winner = Math.floor(Math.random() * n);
+          /* 回転中に項目が編集・削除されても結果が出せるよう、当たりの名前は
+             この時点で控えておく（あとで items[winner] を引き直さない） */
+          const winnerLabel = items[winner].label;
           const center = winner * seg + seg / 2;
           const jitter = (Math.random() - 0.5) * seg * 0.6;
           const target = ((360 - center - jitter) % 360 + 360) % 360;
@@ -111,13 +123,16 @@
             clearTimeout(fallback);
             spinning = false;
             spinBtn.disabled = false;
-            lastWinnerLabel = items[winner].label;
+            stopDrum();
+            if (Gerbera.SE) Gerbera.SE.cymbal();
+            editor.classList.remove('editor-locked');
+            lastWinnerLabel = winnerLabel;
             postBtn.hidden = false;
             postImgBtn.hidden = false;
             resultArea.replaceChildren(
               h('div', { class: 'result-card pop' },
                 h('div', { class: 'result-sub' }, '結果は…'),
-                h('div', { class: 'result-main' }, items[winner].label)));
+                h('div', { class: 'result-main' }, winnerLabel)));
           };
           const onEnd = () => finish();
           rotor.addEventListener('transitionend', onEnd);
@@ -145,7 +160,7 @@
           h('div', { class: 'list-row' },
             h('input', { class: 'input grow', value: it.label,
               oninput: e => { it.label = e.target.value; save(); buildWheel(); } }),
-            h('button', { class: 'icon-btn danger', 'aria-label': 'この項目を削除',
+            h('button', { class: 'icon-btn danger', 'aria-label': 'この項目を削除', 'data-lbl': '削除',
               onclick: () => {
                 items = items.filter(x => x.id !== it.id);
                 save();
@@ -156,6 +171,13 @@
       }
       renderEditor();
 
+      const editor = h('details', { class: 'editor' },
+        h('summary', {}, '⚙️ 項目を編集する'),
+        h('div', { class: 'editor-body' },
+          h('div', { class: 'hstack' }, addInput,
+            h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
+          h('div', { class: 'mt8' }, editList)));
+
       root.append(
         h('div', { class: 'card' },
           resultArea,
@@ -163,13 +185,9 @@
           h('div', { class: 'wheel-wrap mt12' }, svg),
           emptyMsg,
           spinBtn,
-          h('details', { class: 'editor' },
-            h('summary', {}, '⚙️ 項目を編集する'),
-            h('div', { class: 'editor-body' },
-              h('div', { class: 'hstack' }, addInput,
-                h('button', { class: 'btn btn-ghost btn-sm', onclick: addItem }, '追加')),
-              h('div', { class: 'mt8' }, editList))))
+          editor)
       );
+      return stopDrum;
     }
   });
 })();

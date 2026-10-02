@@ -1,7 +1,7 @@
 'use strict';
 /* ツール: 楽曲メモ（持ち歌保存・リクエスト管理・並び替え・次に歌う曲・歌唱履歴） */
 (function () {
-  const { register, Store, h, uid, toast, openX } = Gerbera;
+  const { register, Store, h, uid, toast, sharePost, confirmDialog } = Gerbera;
   const KEY = 'song';
 
   register({
@@ -35,7 +35,7 @@
                   h('div', { class: 'vstack', style: 'gap:6px' },
                     h('button', { class: 'btn btn-primary btn-sm', onclick: () => sung(next) }, '✓ 歌った'),
                     h('button', { class: 'btn btn-lav btn-sm',
-                      onclick: () => openX(`【楽曲メモ】\n次に歌う曲は${next.title}です！みんな聞きに来てね！`) }, '🐦 Xへポスト'))))
+                      onclick: () => sharePost(`【楽曲メモ】\n次に歌う曲は${next.title}です！みんな聞きに来てね！`) }, '🐦 Xへポスト'))))
             : h('div', { class: 'next-card center' },
                 h('div', { class: 'note' }, 'リクエストはまだありません🎵')));
       }
@@ -59,18 +59,18 @@
             h('div', { class: 'grow' },
               h('div', { class: 'row-main' }, r.title),
               r.from ? h('div', { class: 'row-sub' }, r.from + ' さん') : null),
-            h('button', { class: 'icon-btn', 'aria-label': '上へ', onclick: () => {
+            h('button', { class: 'icon-btn', 'aria-label': '上へ', 'data-lbl': '上へ', onclick: () => {
               if (i === 0) return;
               [st.requests[i - 1], st.requests[i]] = [st.requests[i], st.requests[i - 1]];
               save(); render();
             } }, '↑'),
-            h('button', { class: 'icon-btn', 'aria-label': '下へ', onclick: () => {
+            h('button', { class: 'icon-btn', 'aria-label': '下へ', 'data-lbl': '下へ', onclick: () => {
               if (i === st.requests.length - 1) return;
               [st.requests[i + 1], st.requests[i]] = [st.requests[i], st.requests[i + 1]];
               save(); render();
             } }, '↓'),
-            h('button', { class: 'icon-btn', 'aria-label': '歌った', onclick: () => sung(r) }, '✓'),
-            h('button', { class: 'icon-btn danger', 'aria-label': '削除', onclick: () => {
+            h('button', { class: 'icon-btn', 'aria-label': '歌った', 'data-lbl': '歌った', onclick: () => sung(r) }, '✓'),
+            h('button', { class: 'icon-btn danger', 'aria-label': '削除', 'data-lbl': '削除', onclick: () => {
               st.requests = st.requests.filter(x => x.id !== r.id);
               save(); render();
             } }, '🗑')));
@@ -103,7 +103,7 @@
               toast(`「${s.title}」をリクエストに入れました`);
               paintNext();
             } }, '→ リクエストへ'),
-            h('button', { class: 'icon-btn danger', 'aria-label': '削除', onclick: () => {
+            h('button', { class: 'icon-btn danger', 'aria-label': '削除', 'data-lbl': '削除', onclick: () => {
               st.repertoire = st.repertoire.filter(x => x.id !== s.id);
               save(); render();
             } }, '🗑')));
@@ -127,9 +127,10 @@
           rows.length ? rows : h('div', { class: 'empty' }, '歌った曲がここに残ります'),
           st.history.length ? h('button', { class: 'btn btn-danger btn-sm btn-full mt12',
             onclick: () => {
-              if (!confirm('歌唱履歴を全部消しますか？')) return;
-              st.history = [];
-              save(); render();
+              confirmDialog('歌唱履歴を全部消しますか？', () => {
+                st.history = [];
+                save(); render();
+              });
             } }, '履歴をクリア') : null);
       }
 

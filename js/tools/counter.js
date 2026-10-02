@@ -4,7 +4,7 @@
    小さいコンパクトな行にまとめ、スクロールなしで並べられるようにする。
    加算単位・上限などの細かい設定は行の下に折りたたんで表示する。 */
 (function () {
-  const { register, Store, h, uid, toast, fmtNum, openX } = Gerbera;
+  const { register, Store, h, uid, toast, fmtNum, sharePost, confirmDialog } = Gerbera;
   const KEY = 'counters';
   const DEFAULT_LIMIT = 99999;
   const MIN_VALUE = -99999;
@@ -85,9 +85,18 @@
                 save();
                 paint();
               } })),
+          /* 枠ごとに0から数え直す使い方（パネル開け・耐久など）のために、
+             作り直さずに数だけ戻せるようにしておく */
           h('button', { class: 'btn btn-ghost btn-sm btn-full mt12',
             onclick: () => {
-              openX(`【カウンター】${c.name || 'カウンター'}の今の数は${fmtNum(c.value)}。目標まであと${fmtNum(Math.max(0, limit() - c.value))}です！`);
+              if (c.value === 0) { toast('すでに0です'); return; }
+              confirmDialog(`「${c.name || 'カウンター'}」の数を0に戻しますか？（今の数 ${fmtNum(c.value)}）`,
+                () => { c.value = 0; save(); paint(); },
+                { title: '0に戻します', okLabel: '0に戻す' });
+            } }, '↺ 数を0に戻す'),
+          h('button', { class: 'btn btn-ghost btn-sm btn-full mt8',
+            onclick: () => {
+              sharePost(`【カウンター】${c.name || 'カウンター'}の今の数は${fmtNum(c.value)}。目標まであと${fmtNum(Math.max(0, limit() - c.value))}です！`);
             } }, '🐦 Xにポストする'));
 
         const moreBtn = h('button', { class: 'cnt-more', 'aria-label': '増減数・上限の設定を開く',
@@ -104,12 +113,13 @@
             h('div', { class: 'cnt-mid-row' }, valueEl, remainEl)),
           h('button', { class: 'cnt-btn plus', onclick: () => bump(1), 'aria-label': '増やす' }, '＋'),
           moreBtn,
-          h('button', { class: 'icon-btn danger', 'aria-label': 'このカウンターを削除',
+          h('button', { class: 'icon-btn danger', 'aria-label': 'このカウンターを削除', 'data-lbl': '削除',
             onclick: () => {
-              if (!confirm(`「${c.name || 'カウンター'}」を削除しますか？`)) return;
-              counters = counters.filter(x => x.id !== c.id);
-              save();
-              render();
+              confirmDialog(`「${c.name || 'カウンター'}」を削除しますか？`, () => {
+                counters = counters.filter(x => x.id !== c.id);
+                save();
+                render();
+              });
             } }, '🗑'));
 
         paint();

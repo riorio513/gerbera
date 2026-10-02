@@ -1,0 +1,443 @@
+'use strict';
+/* ============================================================
+   ガーベラ 設定
+   - デビューした日（一度だけ設定・以後ロック）
+   - トグル：アプリ内リマインド／ダークモード／IRIAM最新情報を表示／視差効果を減らす
+   - 設定値の保存と適用（ダークモード・視差抑制は <html> に反映）
+   - 画面：設定／利用規約／購入管理／プライバシーポリシー
+   ============================================================ */
+(function () {
+  const { Store, h, toast, emitter, modal } = Gerbera;
+  const KEY = 'settings';
+  const DEFAULTS = {
+    liverName: '',       // ホームの「おかえりなさい、〇〇さん」に出す名前
+    debutDate: null,     // 'YYYY-MM-DD'
+    debutLocked: false,
+    notify: false,       // アプリ内リマインド（OS通知ではない）
+    dark: false,
+    iriam: true,         // 配信管理画面に IRIAM 最新情報を出すか
+    reduceMotion: false,
+    /* アカウント連携。保存するのは投稿先を開くための宛先だけで、
+       パスワードやトークンは一切あずからない。 */
+    accX: '',            // Xのユーザー名（@なし）
+    accDiscord: '',      // Discordのチャンネル/サーバーURL
+    accIriam: ''         // IRIAMのプロフィールURL
+  };
+
+  const ev = emitter();
+  let data = Object.assign({}, DEFAULTS, Store.get(KEY, {}));
+
+  function persist() { Store.set(KEY, data); }
+  function apply() {
+    const root = document.documentElement;
+    root.dataset.theme = data.dark ? 'dark' : 'light';
+    root.classList.toggle('reduce-motion', !!data.reduceMotion);
+    Gerbera._reduceMotion = !!data.reduceMotion;
+  }
+
+  const Settings = {
+    get() { return Object.assign({}, data); },
+    set(patch) {
+      data = Object.assign({}, data, patch);
+      persist(); apply(); ev.emit(Object.assign({}, data));
+    },
+    on(fn) { return ev.on(fn); },
+    apply,
+    /* デビューから今日で何日目か（デビュー日＝1日目）。未設定・未来日なら null */
+    debutDays() {
+      if (!data.debutDate) return null;
+      const start = new Date(data.debutDate + 'T00:00:00');
+      if (isNaN(start)) return null;
+      const now = new Date();
+      const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const d = Math.floor((t0 - start) / 86400000) + 1;
+      return d >= 1 ? d : null;
+    }
+  };
+  Gerbera.Settings = Settings;
+  Gerbera.prefersReducedMotion = () =>
+    !!Gerbera._reduceMotion ||
+    (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  apply();
+
+  /* ---------- 共通パーツ ---------- */
+  function toggle(on, onChange) {
+    const btn = h('button', {
+      class: 'toggle' + (on ? ' on' : ''),
+      role: 'switch', 'aria-checked': on ? 'true' : 'false',
+      onclick: () => {
+        const next = !btn.classList.contains('on');
+        btn.classList.toggle('on', next);
+        btn.setAttribute('aria-checked', next ? 'true' : 'false');
+        onChange(next);
+      }
+    });
+    return btn;
+  }
+  function toggleRow(title, key, sub) {
+    return h('div', { class: 'set-row' },
+      h('div', { class: 'set-row-main' },
+        h('span', { class: 'set-row-title' }, title),
+        sub ? h('span', { class: 'set-row-sub' }, sub) : null),
+      toggle(!!data[key], v => Settings.set({ [key]: v })));
+  }
+
+  /* プッシュ通知だけは特別：ONにするとき通知の許可を取り、取れなければ戻す */
+  function notifyRow() {
+    const sw = toggle(!!data.notify, async v => {
+      if (v) {
+        const ok = Gerbera.Push ? await Gerbera.Push.enable() : false;
+        if (!ok) {
+          sw.classList.remove('on');
+          sw.setAttribute('aria-checked', 'false');
+          Settings.set({ notify: false });
+          return;
+        }
+        Settings.set({ notify: true });
+      } else {
+        Settings.set({ notify: false });
+      }
+    });
+    return h('div', { class: 'set-row' },
+      h('div', { class: 'set-row-main' },
+        h('span', { class: 'set-row-title' }, 'プッシュ通知をONにする'),
+        h('span', { class: 'set-row-sub' },
+          'カレンダーで「リマインドする」にした予定を、その日にお知らせします。対応ブラウザ（＋ホーム画面に追加）ではアプリを閉じていても通知が届きます。')),
+      sw);
+  }
+  function linkRow(title, hash) {
+    return h('button', { class: 'set-row set-row-link', onclick: () => { location.hash = hash; } },
+      h('span', { class: 'set-row-title' }, title),
+      h('span', { class: 'set-row-chev' }, '›'));
+  }
+  function jpDate(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    if (isNaN(d)) return iso;
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+
+  function refreshSettingsScreen() {
+    const route = location.hash.replace(/^#\/?/, '').split('/')[0];
+    if (route === 'settings') renderSettings(document.getElementById('view'));
+    else if (route === 'mypage' && Gerbera.Screens.mypage) Gerbera.Screens.mypage(document.getElementById('view'));
+  }
+
+  /* ---------- 名前（ホームの表示） ---------- */
+  function openNameFlow() {
+    modal({
+      title: '名前',
+      render: (body, ctl) => {
+        const input = h('input', { class: 'input', maxlength: 20,
+          placeholder: 'ホームで呼ばれる名前', value: data.liverName || '' });
+        const submit = () => {
+          Settings.set({ liverName: input.value.trim().slice(0, 20) });
+          ctl.close();
+          toast('名前を設定しました');
+          refreshSettingsScreen();
+        };
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+        body.append(
+          h('p', { class: 'note', style: 'margin-bottom:10px' },
+            'ホームの「おかえりなさい、〇〇さん」に表示されます。空にすると「〇〇」に戻ります。'),
+          input,
+          h('button', { class: 'btn btn-primary btn-full mt16', onclick: submit }, '保存'));
+        setTimeout(() => input.focus(), 60);
+      }
+    });
+  }
+
+  /* ---------- アカウント連携 ----------
+     ここで保存するのは「どこを開くか」だけ。自動投稿はしない（Xは有料APIが要り、
+     IRIAMには公開APIが無い）ので、ガーベラは文面を用意して画面を開くところまでを担う。
+     開く先は必ずhttpsのURLに限る（javascript: などを開かせないため）。 */
+  const ACCOUNTS = [
+    { key: 'accX', label: 'X（旧Twitter）', icon: '🐦',
+      kind: 'handle', placeholder: 'ユーザー名（@は不要）',
+      note: '連携すると、各ツールの「ポスト」で投稿先としてXを選べます。文面を入れた投稿画面が開くので、投稿ボタンはご自身で押してください。' },
+    { key: 'accDiscord', label: 'Discord', icon: '💬',
+      kind: 'url', placeholder: 'https://discord.com/channels/...',
+      note: '投稿したいチャンネルを開いた状態のURLを貼ってください。共有すると文面がコピーされ、そのチャンネルが開きます。貼り付けて送信してください。' },
+    { key: 'accIriam', label: 'IRIAM', icon: '🎙️',
+      kind: 'url', placeholder: 'https://www.iriam.com/...',
+      note: 'IRIAMには外部から投稿するしくみが公開されていないため、投稿先としては選べません。設定すると、共有する文面の最後にプロフィールのURLを添えます。' }
+  ];
+
+  function sanitizeHandle(v) {
+    return String(v || '').trim().replace(/^@+/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 15);
+  }
+  function sanitizeUrl(v) {
+    const s = String(v || '').trim();
+    if (!s) return '';
+    try {
+      const u = new URL(s);
+      return u.protocol === 'https:' ? u.href : null;
+    } catch (e) { return null; }
+  }
+  function accValue(a) {
+    const raw = data[a.key];
+    if (!raw) return '未連携';
+    return a.kind === 'handle' ? '@' + raw : raw;
+  }
+  function openAccountFlow(a) {
+    modal({
+      title: a.icon + ' ' + a.label,
+      render: (body, ctl) => {
+        const input = h('input', { class: 'input', placeholder: a.placeholder,
+          value: data[a.key] ? (a.kind === 'handle' ? '@' + data[a.key] : data[a.key]) : '' });
+        const submit = () => {
+          const raw = input.value.trim();
+          if (!raw) { Settings.set({ [a.key]: '' }); ctl.close(); toast('連携を解除しました'); refreshSettingsScreen(); return; }
+          const v = a.kind === 'handle' ? sanitizeHandle(raw) : sanitizeUrl(raw);
+          if (v === null) { toast('https:// で始まるURLを貼ってください'); return; }
+          if (!v) { toast('入力内容を確認してください'); return; }
+          Settings.set({ [a.key]: v });
+          ctl.close();
+          toast(a.label + 'を連携しました');
+          refreshSettingsScreen();
+        };
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+        body.append(
+          h('p', { class: 'note', style: 'margin-bottom:10px;line-height:1.8' }, a.note),
+          input,
+          h('button', { class: 'btn btn-primary btn-full mt16', onclick: submit }, '保存'),
+          data[a.key]
+            ? h('button', { class: 'btn btn-ghost btn-full mt8', onclick: () => {
+                Settings.set({ [a.key]: '' }); ctl.close();
+                toast('連携を解除しました'); refreshSettingsScreen();
+              } }, '連携を解除する')
+            : null);
+        setTimeout(() => input.focus(), 60);
+      }
+    });
+  }
+
+  /* ---------- デビュー日の設定フロー ---------- */
+  /* 一度設定するとロックされる項目だが、日付を打ち間違えたまま直せないと
+     「◯日目」がずっと合わなくなるため、確認を重ねたうえでの修正だけは通す。 */
+  function openDebutLocked() {
+    modal({
+      title: 'デビューした日',
+      render: (body, ctl) => {
+        body.append(
+          h('p', { style: 'font-size:15px;font-weight:700;text-align:center;margin-bottom:6px' },
+            jpDate(data.debutDate)),
+          h('p', { class: 'note', style: 'line-height:1.8' },
+            'この項目は一度設定すると変更できません。日付を間違えて登録してしまった場合のみ、下から修正できます。'),
+          h('button', { class: 'btn btn-ghost btn-full mt16', onclick: () => {
+            ctl.close();
+            openDebutPicker(true);
+          } }, '間違えたので修正する'),
+          h('button', { class: 'btn btn-primary btn-full mt8', onclick: ctl.close }, '閉じる'));
+      }
+    });
+  }
+  function openDebutFlow() {
+    if (data.debutLocked) { openDebutLocked(); return; }
+    openDebutPicker(false);
+  }
+  function openDebutPicker(isFix) {
+    modal({
+      title: isFix ? 'デビューした日を修正' : 'デビューした日',
+      render: (body, ctl) => {
+        const picker = h('input', { class: 'input', type: 'date', max: todayISO(),
+          value: isFix && data.debutDate ? data.debutDate : null });
+        body.append(
+          h('p', { class: 'note', style: 'margin-bottom:10px' },
+            '配信をはじめた日を選んでください。'),
+          picker,
+          h('p', { class: 'warn', style: 'margin:12px 0 0;line-height:1.7' },
+            '※ この項目は一度設定すると、あとから変更できません。正確な日付を入力してください。'),
+          h('button', { class: 'btn btn-primary btn-full mt16', onclick: () => {
+            if (!picker.value) { toast('日付を選んでください'); return; }
+            ctl.close();
+            confirmDebut(picker.value, isFix);
+          } }, 'OK'));
+      }
+    });
+  }
+  function confirmDebut(iso, isFix) {
+    modal({
+      title: '最終確認',
+      dismissable: true,
+      render: (body, ctl) => {
+        body.append(
+          h('p', { style: 'font-size:15px;font-weight:700;text-align:center;margin-bottom:6px' },
+            jpDate(iso)),
+          h('p', { style: 'text-align:center' }, 'この日にちでよろしいですか？'),
+          h('p', { class: 'warn', style: 'margin:12px 0 0;line-height:1.7' },
+            isFix
+              ? '※ OKを押すと、この日にちに置きかわり、ふたたび変更できなくなります。'
+              : '※ OKを押すと、この設定項目は変更できなくなります。'),
+          h('div', { class: 'hstack mt16', style: 'gap:10px' },
+            h('button', { class: 'btn btn-ghost grow', onclick: ctl.close }, 'もどる'),
+            h('button', { class: 'btn btn-primary grow', onclick: () => {
+              Settings.set({ debutDate: iso, debutLocked: true });
+              ctl.close();
+              toast(isFix ? 'デビューした日を修正しました' : 'デビューした日を設定しました');
+              refreshSettingsScreen();
+            } }, 'OK')));
+      }
+    });
+  }
+  function todayISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /* ---------- 設定画面 ---------- */
+  /* マイページに置く「アカウント連携」。設定から移した */
+  function accountSection() {
+    return [
+      h('div', { class: 'section-label', style: 'margin:18px 2px 6px' }, '🔗 アカウント連携'),
+      h('div', { class: 'set-list' },
+        ACCOUNTS.map(a => h('button', { class: 'set-row set-row-link', onclick: () => openAccountFlow(a) },
+          h('div', { class: 'set-row-main' },
+            h('span', { class: 'set-row-title' }, a.icon + '　' + a.label),
+            h('span', { class: 'set-row-sub' + (data[a.key] ? ' set-row-sub-on' : '') }, accValue(a))),
+          h('span', { class: 'set-row-chev' }, '›')))),
+      h('p', { class: 'note', style: 'margin:8px 2px 0;line-height:1.8' },
+        '連携しても、ガーベラが勝手に投稿することはありません。文面を用意して投稿画面を開くところまでを行い、投稿ボタンはご自身で押していただきます。')
+    ];
+  }
+
+  function renderSettings(view) {
+    const debutRow = h('button', {
+      class: 'set-row set-row-link' + (data.debutLocked ? ' set-row-locked' : ''),
+      onclick: openDebutFlow
+    },
+      h('div', { class: 'set-row-main' },
+        h('span', { class: 'set-row-title' }, 'デビューした日'),
+        h('span', { class: 'set-row-sub' },
+          data.debutDate ? jpDate(data.debutDate) : '未設定',
+          '　（※この項目はあとから変更できません）')),
+      data.debutLocked ? h('span', { class: 'set-row-lockmark' }, '🔒') : h('span', { class: 'set-row-chev' }, '›'));
+
+    const nameRow = h('button', { class: 'set-row set-row-link', onclick: openNameFlow },
+      h('div', { class: 'set-row-main' },
+        h('span', { class: 'set-row-title' }, '名前'),
+        h('span', { class: 'set-row-sub' },
+          data.liverName ? `${data.liverName} さん` : '未設定（ホームでは「〇〇さん」と表示されます）')),
+      h('span', { class: 'set-row-chev' }, '›'));
+
+    view.replaceChildren(
+      h('h1', { class: 'screen-title' }, '設定'),
+      h('div', { class: 'set-list' },
+        nameRow,
+        debutRow,
+        notifyRow(),
+        toggleRow('ダークモード', 'dark'),
+        toggleRow('IRIAM最新情報を表示', 'iriam',
+          'オフにすると、配信管理画面のIRIAMイベント情報が表示されなくなります'),
+        toggleRow('すべての視差効果を減らす', 'reduceMotion',
+          '各ツールの設定より、この設定が優先されます')),
+
+      h('div', { class: 'set-list mt16' },
+        linkRow('利用規約', 'settings/terms')),
+      h('p', { class: 'note', style: 'margin-top:16px' },
+        '設定はこの端末・ブラウザに保存されます。')
+    );
+  }
+
+  /* ---------- 利用規約 ---------- */
+  function renderTerms(view) {
+    view.replaceChildren(
+      h('h1', { class: 'screen-title' }, '利用規約'),
+      docBlock([
+        ['はじめに',
+          '「ガーベラ」（以下「本サービス」）は、IRIAMで活動するライバーの配信準備・配信中の進行をおたすけする個人運営の無料ツールです。本サービスをご利用いただく前に、本規約をお読みください。ご利用をもって本規約に同意したものとみなします。'],
+        ['サービスの位置づけ',
+          '本サービスはIRIAM運営・株式会社DUOGATEとは一切関係のない、非公式のファンメイドツールです。本サービス内に表示されるIRIAMのイベント情報等は、IRIAM公式サイトで公開されている情報をもとにした案内であり、正確性・最新性を保証するものではありません。必ずIRIAM公式の情報をご確認ください。'],
+        ['データの取り扱い',
+          '本サービスで入力・作成した内容（メモ、カウント、カレンダーの予定など）は、原則としてご利用の端末・ブラウザ内（ローカルストレージ）にのみ保存されます。サーバーへは送信されません。ブラウザのデータ消去や不具合により内容が失われることがあります。大切な内容はご自身で控えを取ってください。'],
+        ['禁止事項',
+          '法令または公序良俗に反する行為、本サービスの運営を妨げる行為、リバースエンジニアリング等による不正利用、その他運営が不適切と判断する行為を禁止します。'],
+        ['効果音について',
+          '本サービス内の効果音は「効果音ラボ」（https://soundeffect-lab.info/）の音源を使用しています。'],
+        ['免責',
+          '運営は、本サービスの利用または利用できなかったことによって生じた損害について、一切の責任を負いません。本サービスは予告なく内容の変更・中断・終了を行うことがあります。'],
+        ['有料機能について',
+          '将来的にAI相談機能などの有料（サブスクリプション）機能を提供する場合があります。その際の課金条件・解約方法は、提供開始時にあらためて本規約または別途の定めで案内します。'],
+        ['規約の変更',
+          '運営は必要に応じて本規約を変更できます。変更後の規約は本サービス上に表示された時点で効力を生じます。'],
+        ['お問い合わせ',
+          '本サービスに関するお問い合わせは、アプリ内「お問い合わせ」よりお願いします。']
+      ]),
+      h('p', { class: 'note', style: 'margin-top:14px' }, '制定日：2026年9月4日'),
+      h('h1', { class: 'screen-title', style: 'margin-top:28px' }, '利用規約（わかりやすいver）'),
+      docBlock([
+        ['◯はじめに',
+          'ガーベラの目的は、「IRIAMライバーの日々の企画配信を、配信準備期間からサポートする」ことです。ガーベラ利用者は、例外なく「ガーベラの規約に同意している」として扱います。'],
+        ['◯ガーベラの位置づけ',
+          'ガーベラはIRIAM、あるいは株式会社DUOGATEとは一切関係のない、個人運営のアプリです。IRIAM最新情報の掲載はしていますが、あくまで参考程度にし、各自公式サイトからイベントなどを確認してください。'],
+        ['◯データの扱い',
+          'ガーベラは各ユーザーのデータを「必ず守ります」とは約束できません。大切なデータは、各自で控えを取っておくと良いでしょう。'],
+        ['◯禁止事項',
+          '法律・IRIAM規約・社会的道徳に違反すること、ガーベラのシステムを不正に使うこと、運営の邪魔をすること、その他運営が「ダメだ」と判断したすべてのことは禁止事項です。'],
+        ['◯運営が責任を負わないこと',
+          'ガーベラを使った結果発生した不利益、使えなかった結果発生した不利益、ガーベラのシステムや規約変更、アップデート、サービス終了などで発生したすべての不利益は、運営は負いません。'],
+        ['◯有料機能について',
+          '将来、サポート範囲を広げたり、AI機能を導入するときにサブスクを導入するかもしれません。詳しくはその時にお知らせします。']
+      ])
+    );
+  }
+
+  /* ---------- 購入管理 ---------- */
+  function renderPurchase(view) {
+    view.replaceChildren(
+      h('h1', { class: 'screen-title' }, '購入管理'),
+      h('div', { class: 'card center' },
+        h('p', { style: 'font-size:14px;line-height:1.9' },
+          '現在、購入・サブスクリプションのお申し込みはありません。'),
+        h('p', { class: 'note', style: 'margin-top:8px' },
+          'AI相談機能など有料メニューの提供を開始したら、ここに加入状況・次回請求日・解約の手続きが表示されます。')),
+      h('p', { class: 'note', style: 'margin-top:12px' },
+        '決済まわりは本サービスでは取り扱っていません。加入手続きが用意でき次第、この画面から案内します。')
+    );
+  }
+
+  /* ---------- プライバシーポリシー ---------- */
+  function renderPrivacy(view) {
+    view.replaceChildren(
+      h('h1', { class: 'screen-title' }, 'プライバシーポリシー'),
+      docBlock([
+        ['基本方針',
+          '「ガーベラ」（以下「本サービス」）は個人が運営する無料ツールです。運営は、利用者のプライバシーを尊重し、個人情報を適切に取り扱います。'],
+        ['アプリ内で入力する内容',
+          '本サービスでメモ・カウント・カレンダーの予定・デビュー日などとして入力した内容は、ご利用の端末・ブラウザ内にのみ保存され、運営のサーバーや第三者に送信・共有されることはありません。運営がこれらの内容を閲覧することはできません。'],
+        ['お問い合わせでお預かりする情報',
+          'お問い合わせはGoogleフォームを利用しています。フォームで入力されたお名前・連絡先・お問い合わせ内容は、お問い合わせへの回答・対応の目的にのみ利用します。目的の範囲を超えて利用したり、ご本人の同意なく第三者へ提供したりすることはありません。フォームの送信データはGoogle社のサーバーで管理されます（Googleのプライバシーポリシーが適用されます）。'],
+        ['アクセス情報',
+          '本サービスはGitHub Pages上で公開されています。サーバーへのアクセスに伴い、IPアドレスやブラウザの種類等の情報がホスティング事業者側で記録されることがあります。運営はこれらを個人を特定する目的では利用しません。'],
+        ['Cookie・解析ツール',
+          '本サービスは、行動追跡目的のCookieや広告目的の第三者トラッキングを使用していません。'],
+        ['保有期間',
+          'お問い合わせに関する情報は、対応の完了後、必要がなくなった時点で速やかに削除または匿名化します。'],
+        ['開示・訂正・削除の請求',
+          'お預かりした個人情報の開示・訂正・削除をご希望の場合は、お問い合わせ窓口までご連絡ください。ご本人であることを確認のうえ、合理的な範囲で対応します。'],
+        ['改定',
+          '本ポリシーは必要に応じて改定されます。改定後の内容は本サービス上に表示された時点で効力を生じます。'],
+        ['お問い合わせ窓口',
+          'アプリ内「お問い合わせ」フォームよりご連絡ください。']
+      ]),
+      h('p', { class: 'note', style: 'margin-top:14px' }, '制定日：2026年9月4日')
+    );
+  }
+
+  function docBlock(sections) {
+    return h('div', { class: 'doc-page' },
+      sections.map(([head, text]) =>
+        h('section', { class: 'doc-sec' },
+          h('h2', {}, head),
+          h('p', {}, text))));
+  }
+
+  Gerbera.SettingsParts = { accountSection, linkRow };
+
+  Gerbera.Screens = Object.assign(Gerbera.Screens || {}, {
+    settings: renderSettings,
+    terms: renderTerms,
+    purchase: renderPurchase,
+    privacy: renderPrivacy
+  });
+})();

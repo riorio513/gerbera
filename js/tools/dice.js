@@ -1,42 +1,35 @@
 'use strict';
-/* ツール: ダイス（面数変更・個数変更・複数同時） */
+/* ツール: ダイス（面数変更・個数変更・複数同時・転がるロールアニメーション）
+   4面／6面ダイスをリアルな立体（die4.js／die3d.js）で転がす。
+   「演出」だけを担当し、何の目が出るかはこのファイル内の乱数決定が行う。 */
 (function () {
-  const { register, Store, h, openX, shareResultImage } = Gerbera;
+  const { register, Store, h, sharePost, shareResultImage, createDie3D, createDie4D } = Gerbera;
   const KEY = 'dice';
+  const FACE_OPTIONS = [4, 6];
 
   register({
-    id: 'dice', name: 'ダイス', icon: '🎲',
+    id: 'dice', name: 'サイコロ', icon: '🎲',
     mount(root) {
       const st = Object.assign({ faces: 6, count: 1 }, Store.get(KEY, {}));
+      if (!FACE_OPTIONS.includes(st.faces)) st.faces = 6;
       const save = () => Store.set(KEY, { faces: st.faces, count: st.count });
 
-      const resultBox = h('div', { class: 'dice-box' },
-        h('div', { class: 'note', style: 'align-self:center' }, 'ボタンを押してダイスを振ってね'));
-      const totalBox = h('div', { class: 'dice-total' });
-
-      const facesSel = h('select', { class: 'input', style: 'width:110px',
-        onchange: e => { st.faces = +e.target.value; save(); } },
-        [2, 4, 6, 8, 10, 12, 20, 100].map(f =>
-          h('option', { value: f, selected: f === st.faces || null }, f + '面')));
-
-      const countVal = h('span', { class: 'stepper-val' }, st.count);
-      const setCount = d => {
-        st.count = Math.min(10, Math.max(1, st.count + d));
-        countVal.textContent = st.count;
-        save();
-      };
-
-      let rolling = false;
+      /* ---- UI状態: 'idle' | 'rolling' | 'result' ---- */
+      let uiState = 'idle';
+      let solidInstances = [];   // 生成中の createDie3D/createDie4D インスタンス（多重実行防止・クリーンアップ用）
       let lastFinals = null;
-      const ROLL_MS = 620;
-      function postText() { return `【ダイス】\nダイスの結果は${lastFinals.join('・')}でした！`; }
+
+      /* ---- 結果表示領域（画面上部・ロール中の見た目とは独立） ---- */
+      const resultArea = h('div', { class: 'empty' }, 'ボタンを押してサイコロを振ってね');
+
+      function postText() { return `【サイコロ】\nサイコロの結果は${lastFinals.join('・')}でした！`; }
       const postBtn = h('button', { class: 'btn btn-lav grow', hidden: true,
-        onclick: () => { if (lastFinals) openX(postText()); } }, '🐦 文章でポスト');
+        onclick: () => { if (lastFinals) sharePost(postText()); } }, '🐦 文章でポスト');
       const postImgBtn = h('button', { class: 'btn btn-ghost grow', hidden: true,
         onclick: () => {
           if (!lastFinals) return;
           shareResultImage({
-            badge: '【ダイス】',
+            badge: '【サイコロ】',
             main: lastFinals.join('・'),
             note: lastFinals.length > 1 ? '合計 ' + lastFinals.reduce((a, b) => a + b, 0) : '',
             postText: postText()
@@ -44,59 +37,148 @@
         } }, '🖼️ 画像でポスト');
       const postRow = h('div', { class: 'hstack mt8' }, postBtn, postImgBtn);
 
-      function roll() {
-        if (rolling) return;
-        rolling = true;
-        rollBtn.disabled = true;
-        const finals = Array.from({ length: st.count }, () => 1 + Math.floor(Math.random() * st.faces));
-        totalBox.textContent = '';
-        const dieEls = finals.map(() => h('div', { class: 'die rolling' }, '?'));
-        resultBox.replaceChildren(...dieEls);
-
-        dieEls.forEach((el, i) => {
-          const delay = i * 90;
-          setTimeout(() => {
-            const spin = setInterval(() => {
-              el.textContent = 1 + Math.floor(Math.random() * st.faces);
-            }, 55);
-            setTimeout(() => {
-              clearInterval(spin);
-              el.textContent = finals[i];
-              el.classList.remove('rolling');
-              el.classList.add('pop');
-            }, ROLL_MS);
-          }, delay);
-        });
-
-        const totalDelay = ROLL_MS + (dieEls.length - 1) * 90 + 40;
-        setTimeout(() => {
-          totalBox.textContent = st.count > 1 ? '合計 ' + finals.reduce((a, b) => a + b, 0) : '';
-          rolling = false;
-          rollBtn.disabled = false;
-          lastFinals = finals;
-          postBtn.hidden = false;
-          postImgBtn.hidden = false;
-        }, totalDelay);
+      function paintResult() {
+        if (uiState !== 'result' || !lastFinals) {
+          resultArea.className = 'empty';
+          resultArea.textContent = 'ボタンを押してサイコロを振ってね';
+          return;
+        }
+        resultArea.className = 'result-card pop';
+        const sum = lastFinals.reduce((a, b) => a + b, 0);
+        const kids = [
+          h('div', { class: 'result-sub' }, '結果'),
+          h('div', { class: 'result-main' }, lastFinals.join('・'))
+        ];
+        if (lastFinals.length > 1) kids.push(h('div', { class: 'result-note' }, `合計 ${sum}`));
+        resultArea.replaceChildren(...kids);
       }
 
-      const rollBtn = h('button', { class: 'btn btn-primary btn-big btn-full', onclick: roll }, '🎲 ダイスを振る');
+      const facesSel = h('select', { class: 'input', style: 'width:110px',
+        onchange: e => { st.faces = +e.target.value; save(); buildStage(); } },
+        FACE_OPTIONS.map(f =>
+          h('option', { value: f, selected: f === st.faces || null }, f + '面')));
+
+      const countVal = h('span', { class: 'stepper-val' }, st.count);
+      const setCount = d => {
+        if (uiState === 'rolling') return;
+        st.count = Math.min(10, Math.max(1, st.count + d));
+        countVal.textContent = st.count;
+        save();
+        buildStage();
+      };
+      const minusBtn = h('button', { onclick: () => setCount(-1), 'aria-label': '個数を減らす' }, '−');
+      const plusBtn = h('button', { onclick: () => setCount(1), 'aria-label': '個数を増やす' }, '＋');
+
+      /* ---- ロールアニメーションの舞台（サイコロ本体はここにだけ存在する） ---- */
+      const rollStage = h('div', { class: 'dice-roll-stage' });
+      const stageWrap = h('div', { class: 'dice-stage-wrap' }, rollStage);
+
+      function clearActiveAnimations() {
+        solidInstances.forEach(inst => inst.destroy());
+        solidInstances = [];
+      }
+
+      /* 面数・個数が変わったら舞台を作り直す（ロール中は変更UI自体を無効化しているため
+         多重実行の心配はない）。
+         前の面数・個数で出した目をそのまま残すと、6面の「5」を100面の結果として
+         ポストできてしまうため、作り直しのタイミングで結果も消す。 */
+      function reducedMotion() {
+        return typeof Gerbera.prefersReducedMotion === 'function' && Gerbera.prefersReducedMotion();
+      }
+
+      function buildStage() {
+        clearActiveAnimations();
+        uiState = 'idle';
+        lastFinals = null;
+        paintResult();
+        postBtn.hidden = true;
+        postImgBtn.hidden = true;
+        rollStage.replaceChildren();
+        if (!reducedMotion()) {
+          const slotClass = st.faces === 6 ? 'die3d-slot' : 'die4-slot';
+          const factory = st.faces === 6 ? createDie3D : createDie4D;
+          for (let i = 0; i < st.count; i++) {
+            const slot = h('div', { class: slotClass });
+            rollStage.appendChild(slot);
+            solidInstances.push(factory(slot));
+          }
+        } else {
+          const dice = [];
+          for (let i = 0; i < st.count; i++) {
+            const die = h('div', { class: 'dice-roll-die' }, h('span', { class: 'num' }, ''));
+            rollStage.appendChild(h('div', { class: 'dice-slot' }, die));
+            dice.push(die);
+          }
+          rollStage._flatDice = dice;
+        }
+      }
+
+      /* ロール中は面数・個数の変更をまとめて止める。個数だけ生きていると
+         転がっている最中に舞台が作り直され、ロールが終わらなくなる。 */
+      function lockControls(on) {
+        rollBtn.disabled = on;
+        facesSel.disabled = on;
+        minusBtn.disabled = on;
+        plusBtn.disabled = on;
+      }
+
+      function roll() {
+        if (uiState === 'rolling') return; // 多重実行防止
+        uiState = 'rolling';
+        lockControls(true);
+        postBtn.hidden = true;
+        postImgBtn.hidden = true;
+
+        const finals = Array.from({ length: st.count }, () => 1 + Math.floor(Math.random() * st.faces));
+        let promises;
+
+        if (reducedMotion()) {
+          (rollStage._flatDice || []).forEach((el, i) => {
+            el.classList.add('rolled');
+            el.querySelector('.num').textContent = finals[i];
+          });
+          lastFinals = finals;
+          uiState = 'result';
+          paintResult();
+          postBtn.hidden = false;
+          postImgBtn.hidden = false;
+          lockControls(false);
+          return;
+        }
+
+        promises = solidInstances.map((inst, i) => inst.roll(finals[i]));
+
+        Promise.all(promises).then(() => {
+          if (uiState !== 'rolling') return; // アンマウント等で取り消し済み
+          lastFinals = finals;
+          uiState = 'result';
+          paintResult();
+          postBtn.hidden = false;
+          postImgBtn.hidden = false;
+          lockControls(false);
+        });
+      }
+
+      const rollBtn = h('button', { class: 'btn btn-primary btn-big btn-full', onclick: roll }, '🎲 サイコロを振る');
 
       root.append(
         h('div', { class: 'card' },
-          h('div', { class: 'hstack', style: 'justify-content:center;flex-wrap:wrap;gap:14px' },
+          h('div', { class: 'mt8' }, resultArea),
+          postRow,
+          h('div', { class: 'hstack mt16', style: 'justify-content:center;flex-wrap:wrap;gap:14px' },
             h('div', { class: 'hstack' },
               h('span', { class: 'input-label', style: 'margin:0' }, '面数'), facesSel),
             h('div', { class: 'hstack' },
               h('span', { class: 'input-label', style: 'margin:0' }, '個数'),
-              h('div', { class: 'stepper' },
-                h('button', { onclick: () => setCount(-1), 'aria-label': '個数を減らす' }, '−'),
-                countVal,
-                h('button', { onclick: () => setCount(1), 'aria-label': '個数を増やす' }, '＋')))),
-          h('div', { class: 'mt16' }, resultBox),
-          h('div', { class: 'mt8' }, totalBox),
-          rollBtn,
-          postRow)
+              h('div', { class: 'stepper' }, minusBtn, countVal, plusBtn))),
+          stageWrap,
+          rollBtn)
       );
+      buildStage();
+
+      /* ---- アンマウント時のクリーンアップ：残っているアニメーション/タイマー/
+             立体ダイスのrAFループが次回の操作に影響しないようにする ---- */
+      return () => { clearActiveAnimations(); };
     }
   });
 })();

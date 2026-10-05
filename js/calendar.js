@@ -114,6 +114,56 @@
     return Array.from(Gerbera.tools.values()).map(t => ({ id: t.id, label: t.name }));
   }
 
+  /* ホーム画面から開く、その日に記録した内容の閲覧用小窓（入力はできない） */
+  function openDaySummary(dateStr) {
+    const dt = parseISO(dateStr);
+    modal({
+      title: jpShort(dateStr) + '（' + '日月火水木金土'[dt.getDay()] + '）の記録',
+      render: (body) => {
+        const items = itemsOn(dateStr);
+        const plus = plusOn(dateStr);
+        const D = Gerbera.Debut ? Gerbera.Debut.get() : null;
+        const kpis = ((D && D.kpiRecords && D.kpiRecords.records) || []).filter(r => r.date === dateStr);
+        const rows = [];
+
+        ['event', 'plan', 'birthday', 'todo'].forEach(type => {
+          items.filter(it => it.type === type).forEach(it => {
+            const extra = [];
+            if (type === 'plan' && it.tools && it.tools.length) extra.push('予約ツール ' + it.tools.length + '件');
+            if (type === 'todo' && it.done) extra.push('完了');
+            rows.push(h('div', { class: 'list-row' },
+              h('span', { class: 'badge' }, typeLabel(type)),
+              h('span', { class: 'row-main', style: type === 'todo' && it.done ? 'text-decoration:line-through;opacity:.6' : '' },
+                itemText(it), extra.length ? h('span', { class: 'row-sub', style: 'margin-left:8px' }, extra.join('・')) : null)));
+          });
+        });
+
+        if (plus && (plus.done || plus.plan)) {
+          rows.push(h('div', { class: 'list-row' },
+            h('span', { class: 'badge' }, 'プラス'),
+            h('span', { class: 'row-main' },
+              plus.done ? '取れた ＋' + (plus.amount || 0) : '取る予定')));
+        }
+
+        kpis.forEach(r => {
+          const bits = [];
+          if (r.viewerCount) bits.push('視聴者 ' + r.viewerCount + '人');
+          if (r.duration) bits.push('配信 ' + r.duration + '分');
+          rows.push(h('div', { class: 'list-row' },
+            h('span', { class: 'badge' }, '配信'),
+            h('span', { class: 'row-main' }, bits.length ? bits.join('・') : '配信を記録しました',
+              r.memo ? h('div', { class: 'row-sub', style: 'white-space:pre-wrap;margin-top:2px' }, r.memo) : null)));
+        });
+
+        body.append(
+          rows.length
+            ? h('div', { class: 'vstack', style: 'gap:6px' }, rows)
+            : h('div', { class: 'empty' }, 'この日の記録はありません'),
+          h('p', { class: 'note', style: 'margin-top:12px' }, '予定やプラスの入力・編集は、配信管理から行えます。'));
+      }
+    });
+  }
+
   function openDayModal(dateStr, onChange) {
     let activeTab = 'event';
     modal({
@@ -350,8 +400,11 @@
             plusMark,
             h('span', { class: 'cal-dots' }, dots)
           ];
-          // 閲覧のみ（ホーム画面）のときはタップで入力小窓を開かない
-          if (opts.readOnly) return h('span', { class: cls.join(' ') + ' cal-cell-ro' }, inner);
+          // 閲覧のみ（ホーム画面）のときは、入力小窓ではなく記録の閲覧用小窓を開く
+          if (opts.readOnly) {
+            return h('button', { class: cls.join(' ') + ' cal-cell-ro', onclick: () => openDaySummary(ds),
+              'aria-label': jpShort(ds) + 'の記録を見る' }, inner);
+          }
           return h('button', { class: cls.join(' '), onclick: () => openDayModal(ds, paint) }, inner);
         }));
 

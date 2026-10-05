@@ -1472,3 +1472,5 @@ button.cal-cell:active{transform:scale(.95);}
 .auth-agree a{color:var(--main-deep);font-weight:700;}
 .auth-error{margin-top:10px;font-size:13px;line-height:1.7;color:var(--danger,#c0392b);}
 .auth-note{margin:12px 6px 0;text-align:center;}
+.auth-code{padding:14px 10px;border-radius:12px;background:var(--bg-soft);border:1px dashed var(--main);text-align:center;font-size:19px;font-weight:900;letter-spacing:.06em;color:var(--main-deep);word-break:break-all;user-select:all;font-variant-numeric:tabular-nums;}
+.auth-forgot{display:block;margin:14px auto 0;padding:4px 6px;border:0;background:none;font:inherit;font-size:13px;color:var(--main-deep);text-decoration:underline;cursor:pointer;}

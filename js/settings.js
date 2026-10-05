@@ -301,6 +301,97 @@
     ];
   }
 
+  /* ---------- パスワード（変更・再設定用コード） ---------- */
+  function actionRow(title, sub, onclick) {
+    return h('button', { class: 'set-row set-row-link', onclick },
+      h('div', { class: 'set-row-main' },
+        h('span', { class: 'set-row-title' }, title),
+        h('span', { class: 'set-row-sub' }, sub)),
+      h('span', { class: 'set-row-chev' }, '›'));
+  }
+  const AUTH_ERRORS = {
+    bad_current: '今のパスワードが違います',
+    bad_password: '新しいパスワードは8文字以上で入力してください',
+    invalid_token: 'ログインの有効期限が切れました。ログインし直してください',
+    network: '通信できませんでした。電波の良いところで、もう一度お試しください'
+  };
+  function authErr(e) { return AUTH_ERRORS[e.code] || 'うまくいきませんでした。もう一度お試しください'; }
+
+  function passField(placeholder, autocomplete) {
+    return h('input', { class: 'input', type: 'password', placeholder, autocomplete, 'aria-label': placeholder });
+  }
+
+  function openPasswordChange() {
+    modal({
+      title: 'パスワードを変更',
+      render: (body, ctl) => {
+        const cur = passField('今のパスワード', 'current-password');
+        const next = passField('新しいパスワード（8文字以上）', 'new-password');
+        const again = passField('新しいパスワード（もう一度）', 'new-password');
+        const btn = h('button', { class: 'btn btn-primary btn-full mt16' }, '変更する');
+        btn.addEventListener('click', async () => {
+          if (next.value !== again.value) { toast('新しいパスワードが一致しません'); return; }
+          btn.disabled = true;
+          try {
+            await Gerbera.Auth.changePassword(cur.value, next.value);
+            ctl.close();
+            toast('パスワードを変更しました');
+          } catch (e) {
+            toast(authErr(e));
+            btn.disabled = false;
+          }
+        });
+        body.append(cur, h('div', { class: 'mt8' }, next), h('div', { class: 'mt8' }, again), btn);
+        setTimeout(() => cur.focus(), 60);
+      }
+    });
+  }
+
+  function showRecoveryCode(code) {
+    modal({
+      title: '新しい再設定用コード',
+      render: (body, ctl) => {
+        body.append(
+          h('p', { class: 'note', style: 'line-height:1.8;margin-bottom:10px' },
+            'パスワードを忘れたときに、このコードで再設定できます。前のコードは使えなくなりました。このあと二度と表示されないので、必ず控えてください。'),
+          h('div', { class: 'auth-code' }, code),
+          h('button', { class: 'btn btn-ghost btn-full mt8', onclick: () => {
+            const done = ok => toast(ok ? 'コピーしました' : 'コピーできませんでした。手で書き留めてください');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(code).then(() => done(true), () => done(false));
+            } else done(false);
+          } }, 'コードをコピー'),
+          h('button', { class: 'btn btn-primary btn-full mt8', onclick: ctl.close }, '控えました'));
+      }
+    });
+  }
+
+  function openNewCode() {
+    modal({
+      title: '再設定用コードを発行し直す',
+      render: (body, ctl) => {
+        const cur = passField('今のパスワード', 'current-password');
+        const btn = h('button', { class: 'btn btn-primary btn-full mt16' }, '発行する');
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            const code = await Gerbera.Auth.newRecoveryCode(cur.value);
+            ctl.close();
+            showRecoveryCode(code);
+          } catch (e) {
+            toast(authErr(e));
+            btn.disabled = false;
+          }
+        });
+        body.append(
+          h('p', { class: 'note', style: 'line-height:1.8;margin-bottom:10px' },
+            '本人確認のため、今のパスワードを入力してください。発行すると、これまでのコードは使えなくなります。'),
+          cur, btn);
+        setTimeout(() => cur.focus(), 60);
+      }
+    });
+  }
+
   function renderSettings(view) {
     const debutRow = h('button', {
       class: 'set-row set-row-link' + (data.debutLocked ? ' set-row-locked' : ''),
@@ -331,6 +422,11 @@
           'オフにすると、配信管理画面のIRIAMイベント情報が表示されなくなります'),
         toggleRow('すべての視差効果を減らす', 'reduceMotion',
           '各ツールの設定より、この設定が優先されます')),
+
+      h('div', { class: 'section-label', style: 'margin:18px 2px 6px' }, '🔑 パスワード'),
+      h('div', { class: 'set-list' },
+        actionRow('パスワードを変更', '今のパスワードを入力して、新しいものに変えます', openPasswordChange),
+        actionRow('再設定用コードを発行し直す', 'パスワードを忘れたときに使います。前のコードは使えなくなります', openNewCode)),
 
       h('div', { class: 'set-list mt16' },
         linkRow('利用規約', 'settings/terms')),

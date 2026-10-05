@@ -50,6 +50,25 @@
       h('button', { class: 'btn btn-ghost btn-sm', onclick: () => { location.hash = 'settings'; } }, '設定 ›'));
   }
 
+  /* ---------- アカウント情報 ---------- */
+  function accountInfo() {
+    const A = Gerbera.Auth;
+    if (!A || !A.isLoggedIn()) return [];
+    return [
+      h('div', { class: 'section-label', style: 'margin:18px 2px 6px' }, '🔑 アカウント'),
+      h('div', { class: 'card' },
+        h('div', { class: 'set-row-sub', style: 'margin-bottom:2px' }, 'ログイン中のメールアドレス'),
+        h('div', { style: 'font-weight:700;overflow-wrap:anywhere;margin-bottom:12px' }, A.email()),
+        h('button', { class: 'btn btn-ghost btn-full', onclick: () => {
+          confirmDialog('ログアウトしますか？ この端末のデータは消えません。', () => {
+            A.logout();
+            location.hash = '';
+            toast('ログアウトしました');
+          }, { title: 'ログアウト', okLabel: 'ログアウト', danger: false });
+        } }, 'ログアウト'))
+    ];
+  }
+
   /* ---------- データの引き継ぎ（バックアップ） ---------- */
   function collectBackup() {
     const data = {};
@@ -195,6 +214,7 @@
     const kids = [
       h('h1', { class: 'screen-title' }, 'マイページ'),
       profileCard(),
+      accountInfo(),
       backupSection(),
       planSection(),
       parts ? parts.accountSection() : [],

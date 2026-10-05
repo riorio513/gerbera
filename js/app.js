@@ -1286,14 +1286,11 @@
        ・一般ユーザーには存在を悟らせない（権限がなければ通常のホームと同じ表示にする）
        ・管理者としてログインしているユーザーだけが使える
      ■ 現状
-       ログイン機能が未実装のため、本番では誰も入れない（＝存在しないのと同じ）。
-       開発中の確認用に、localhost / 127.0.0.1 で開いたときだけ入れる。
-       認証情報はコードに一切持たない（公開リポジトリのため）。
-     ■ ログイン制の導入時にやること
-       Gerbera.Auth.isAdmin() を実装し、サーバー側で「管理者メールアドレスか」を
-       判定した結果を返す。判定をブラウザ側のコードに置いてはいけない。 */
+       サーバー（api/auth.js）が「管理者のメールアドレスか」を判定した結果が
+       Gerbera.Auth.isAdmin() に入る。管理者の情報はこのコードに一切持たない（公開リポジトリのため）。
+       開発中の確認用に、localhost / 127.0.0.1 で開いたときも入れる。 */
   function isAdminAuthed() {
-    if (Gerbera.Auth && typeof Gerbera.Auth.isAdmin === 'function') return !!Gerbera.Auth.isAdmin();
+    if (Gerbera.Auth && Gerbera.Auth.isAdmin()) return true;
     return ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   }
 
@@ -1483,6 +1480,19 @@
     const parts = full.split('/');
     const p0 = parts[0];
     const SC = Gerbera.Screens || {};
+
+    /* ログインしていないあいだは、ログイン画面以外を開けない。
+       ただし登録前に読めるよう、利用規約とプライバシーポリシーだけは開ける */
+    const locked = !Gerbera.Auth.isLoggedIn();
+    document.body.classList.toggle('auth-locked', locked);
+    const readablePage = p0 === 'settings' && (parts[1] === 'terms' || parts[1] === 'privacy');
+    if (locked && !readablePage) {
+      if (sheet.classList.contains('open')) { closeSheet(); return; }
+      backBtn.hidden = true;
+      Gerbera.AuthUI.renderLogin(view, () => { location.hash = ''; route(); });
+      window.scrollTo(0, 0);
+      return;
+    }
 
     backBtn.hidden = (full === '');
 
@@ -1727,6 +1737,8 @@
   if (Gerbera.Stopwatch) Gerbera.Stopwatch.ev.on(type => { if (type === 'state') paintTimerPill(); });
   paintTimerPill();
   route();
+  /* 保存済みのログインがまだ有効かを確かめる。無効と言われたらログイン画面へ戻す */
+  Gerbera.Auth.verify().then(ok => { if (!ok) route(); });
 
   /* 起動時：通知ONなら当日ぶんのリマインドを同期（通知許可済みならOS通知も出す） */
   if (Gerbera.Settings && Gerbera.Settings.get().notify && Gerbera.Push) {

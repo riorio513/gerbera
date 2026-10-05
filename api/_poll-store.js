@@ -80,7 +80,10 @@ export async function readBody(req) {
 
 /* サイト本体（GitHub Pages）から別オリジンで呼ばれるので、許可するオリジンだけ
    CORS を通す。それ以外のオリジンには許可ヘッダを返さない。 */
-const ALLOWED_ORIGINS = ['https://riorio513.github.io'];
+const ALLOWED_ORIGINS = [
+  'https://riorio513.github.io',
+  'http://localhost:4176', 'http://127.0.0.1:4176'   // 開発中の確認用
+];
 function applyCors(req, res) {
   const origin = req.headers && req.headers.origin;
   if (origin && ALLOWED_ORIGINS.includes(origin)) {

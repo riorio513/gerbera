@@ -327,7 +327,8 @@ window.Gerbera = (function () {
      Vercel 上やローカルで開いているときは同じオリジンの /api/ を使う。 */
   const VOTE_API_ORIGIN = 'https://gerbera-api.vercel.app';
   function apiUrl(path) {
-    return (/\.github\.io$/.test(location.hostname) ? VOTE_API_ORIGIN : '') + path;
+    const remote = /\.github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    return (remote ? VOTE_API_ORIGIN : '') + path;
   }
 
   return { Store, register, getTool, tools, h, uid, emitter, modal, confirmDialog, toast, fmtNum, pad2, fmtClock, ensureAudio, chime, openXIntent, shareResultImage, apiUrl };

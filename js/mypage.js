@@ -58,7 +58,12 @@
       h('div', { class: 'section-label', style: 'margin:18px 2px 6px' }, '🔑 アカウント'),
       h('div', { class: 'card' },
         h('div', { class: 'set-row-sub', style: 'margin-bottom:2px' }, 'ログイン中のメールアドレス'),
-        h('div', { style: 'font-weight:700;overflow-wrap:anywhere;margin-bottom:12px' }, A.email()),
+        h('div', { style: 'font-weight:700;overflow-wrap:anywhere;margin-bottom:12px' }, A.email(),
+          A.isAdmin() ? h('span', { class: 'badge', style: 'margin-left:8px' }, '管理者') : null),
+        A.isAdmin()
+          ? h('button', { class: 'btn btn-primary btn-full', style: 'margin-bottom:8px',
+              onclick: () => { location.hash = 'admin'; } }, '🛠 管理者ページを開く')
+          : null,
         h('button', { class: 'btn btn-ghost btn-full', onclick: () => {
           confirmDialog('ログアウトしますか？ この端末のデータは消えません。', () => {
             A.logout();
